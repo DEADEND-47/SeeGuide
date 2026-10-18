@@ -13,9 +13,9 @@
 
 ## Development Status
 
-- **Current Stage:** **Stage 1 of 10** — *Requirements Analysis, Repository Inspection, Architecture, Contracts, and Development Plan*
-- **Stage Goal:** Establish architectural specifications, functional/non-functional requirements, API telemetry contracts (JSON schemas and example payloads), and validation tooling without introducing premature heavyweight dependencies.
-- **Prerequisites Note:** Stage 1 requires **zero cloud credentials, zero external paid API keys, and no ONNX model downloads**. Only a standard Python 3.11+ environment with standard library modules is needed.
+- **Current Stage:** **Stage 2 of 10** — *Project Foundation, Environment Configuration, Dependencies, and Core Repository Structure*
+- **Stage Goal:** Establish reproducible environment configuration (Python 3.11+, pinned OpenCV 5 headless `opencv-python-headless==5.0.0.93`, FastAPI, WebSockets, Pytest), cross-platform automation tooling (`Makefile`, shell & PowerShell scripts), environment verification, and clean package skeletons.
+- **Stage 1 Status:** Complete. All contracts, JSON schemas, examples, and documentation are preserved.
 
 ---
 
@@ -24,73 +24,125 @@
 ```text
 SeeGuide/
 ├── .gitignore                                      # Excludes virtual environments, models, caches, and secrets
+├── Makefile                                        # Automation targets: setup, check, test, validate, run, clean
+├── pytest.ini                                      # Pytest configuration with asyncio_mode=auto and testpaths
 ├── README.md                                       # Project overview, safety disclaimers, and quickstart
+├── requirements.txt                                # Strictly pinned dependencies (OpenCV 5.0.0.93, FastAPI, etc.)
+├── agent/                                          # Agent runtime and policy engine package
+│   ├── __init__.py
+│   ├── policy.py                                   # Deterministic arbitration rules (P0-P3 priorities)
+│   ├── state.py                                    # State tracker, operating modes, and history
+│   ├── tools.py                                    # Agent vision tools invocation interfaces
+│   └── trace.py                                    # Telemetry trace logging
+├── benchmarks/                                     # Benchmarking and profiling
+│   ├── results/                                    # Profiling output artifacts (.gitkeep)
+│   └── run_profile.py                              # Latency profiler
 ├── contracts/                                      # Formal JSON Schemas for inter-component communication
+│   ├── agent_to_client_action.schema.json         # Agent action directives dispatched to user device
 │   ├── client_to_server_frame.schema.json         # Telemetry contract for phone camera frames to backend
-│   ├── vision_to_agent_observation.schema.json    # Vision pipeline observations sent to deterministic agent
-│   └── agent_to_client_action.schema.json         # Agent action directives dispatched to user device
+│   └── vision_to_agent_observation.schema.json    # Vision pipeline observations sent to deterministic agent
 ├── docs/                                           # Project architecture and development specifications
-│   ├── requirements.md                             # Comprehensive functional and non-functional requirements (FR-1..16, NFR-1..8)
 │   ├── architecture.md                             # System design, dataflow diagrams, and privacy/security rules
-│   ├── roadmap.md                                  # 10-stage execution plan, milestones, and exit criteria
+│   ├── assumptions.md                              # System assumptions and operating constraints
 │   ├── contracts.md                                # Detailed documentation of communication protocols
 │   ├── decisions.md                                # Architectural Decision Records (ADRs)
-│   ├── assumptions.md                              # System assumptions and operating constraints
+│   ├── requirements.md                             # Comprehensive functional and non-functional requirements
+│   ├── roadmap.md                                  # 10-stage execution plan, milestones, and exit criteria
 │   └── stage-reports/
-│       └── stage-1-report.md                       # Stage 1 execution report and verification audit
+│       ├── stage-1-report.md                       # Stage 1 execution report and verification audit
+│       └── stage-2-report.md                       # Stage 2 environment & repository structure report
+├── eval/                                           # Evaluation pipeline for competition judging
+│   ├── clips/                                      # Evaluation video clips (.gitkeep)
+│   ├── labels.csv                                  # Ground truth annotation manifest
+│   ├── results/                                    # Evaluation metrics and outputs (.gitkeep)
+│   └── run_eval.py                                 # Evaluation execution script
 ├── examples/                                       # Verified JSON contract examples
+│   ├── action.example.json                         # Sample high-priority hazard warning action
 │   ├── frame_message.example.json                 # Sample client frame payload
-│   ├── observation.example.json                    # Sample vision pipeline output observation
-│   └── action.example.json                         # Sample high-priority hazard warning action
-└── scripts/                                        # Operational and validation scripts
-    └── validate_contracts.py                       # Zero-dependency Python standard library validator
+│   └── observation.example.json                    # Sample vision pipeline output observation
+├── infra/                                          # Zero-dollar AWS Free Tier deployment assets
+│   ├── Caddyfile                                   # Reverse proxy with automatic Let's Encrypt TLS
+│   ├── deploy.sh                                   # EC2 deployment automation script
+│   ├── dynamodb_setup.py                           # DynamoDB trace table provisioner
+│   └── iam_policy.json                             # Least-privilege IAM policy for EC2 role
+├── scripts/                                        # Operational and validation scripts
+│   ├── check_environment.py                       # Validates Python 3.11+, OpenCV 5.x, FastAPI, etc.
+│   ├── run_server.ps1                              # Server launch script (Windows PowerShell)
+│   ├── run_server.sh                               # Server launch script (Linux/macOS)
+│   ├── setup.ps1                                   # Environment setup script (Windows PowerShell)
+│   ├── setup.sh                                    # Environment setup script (Linux/macOS)
+│   └── validate_contracts.py                       # Zero-dependency Python standard library validator
+├── server/                                         # FastAPI WebSocket backend package
+│   ├── __init__.py
+│   ├── main.py                                     # FastAPI application entry point & health check
+│   ├── session.py                                  # Session management and client state
+│   └── websocket_handler.py                        # WebSocket telemetry handler & single-frame buffer
+├── tests/                                          # Test suite
+│   ├── __init__.py
+│   ├── test_contracts.py                           # Contract schema verification tests
+│   ├── test_hazard.py                              # Hazard evaluation test skeleton
+│   └── test_policy.py                              # Deterministic policy test skeleton
+├── vision/                                         # OpenCV 5 Computer Vision pipeline package
+│   ├── __init__.py
+│   ├── detector.py                                 # Object detection (OpenCV Zoo ONNX YOLOX-nano)
+│   ├── fast_tier.py                                # Fast-tier Laplacian blur, luma, and flow divergence
+│   ├── hazard.py                                   # Corridor edge density and looming collision scoring
+│   ├── ocr.py                                      # Text detection & OCR for door signs and labels
+│   ├── privacy.py                                  # Irreversible face Gaussian blur redaction
+│   └── tracker.py                                  # Obstacle bounding box tracker & growth rate
+└── web/                                            # Lightweight browser PWA frontend (.gitkeep)
 ```
 
 ---
 
-## Quickstart: Validating Stage 1
+## Quickstart & Verification
 
-Stage 1 verification uses only Python standard library utilities:
-
+### 1. Verify Runtime Environment
 ```bash
-# Run contract validation suite
-python scripts/validate_contracts.py
+python scripts/check_environment.py
 ```
 
 Expected output:
 ```text
 ====================================================================
-SeeGuide Stage 1 Contract Validation Suite
+SeeGuide Stage 2 Environment Verification
 ====================================================================
-
-[Contract] Client-to-Server Frame Message
-  Schema:  contracts/client_to_server_frame.schema.json
-  Example: examples/frame_message.example.json
-  [PASS] All required fields, types, and constraints verified successfully.
-
-[Contract] Vision-to-Agent Observation
-  Schema:  contracts/vision_to_agent_observation.schema.json
-  Example: examples/observation.example.json
-  [PASS] All required fields, types, and constraints verified successfully.
-
-[Contract] Agent-to-Client Action Message
-  Schema:  contracts/agent_to_client_action.schema.json
-  Example: examples/action.example.json
-  [PASS] All required fields, types, and constraints verified successfully.
-
+[*] Checking Python runtime: detected 3.13.7
+    [PASS] Python version 3.13.7 satisfies requirement (>= 3.11).
+[*] Checking OpenCV installation...
+    Detected cv2.__version__ = 5.0.0
+    [PASS] OpenCV 5.x verified (5.0.0).
+[*] Checking FastAPI installation...
+    [PASS] FastAPI verified (0.136.1).
+[*] Checking Pydantic installation...
+    [PASS] Pydantic verified (2.13.3).
+[*] Checking WebSockets installation...
+    [PASS] WebSockets verified (16.1.1).
+    [INFO] uvicorn: 0.46.0
+    [INFO] boto3: 1.43.114
+    [INFO] pytest: 9.1.1
+    [INFO] dotenv: installed
 ====================================================================
-Summary: 3 passed, 0 failed.
+All core environment requirements VERIFIED successfully!
 ====================================================================
 ```
 
-You can also syntax-validate all JSON schemas and payload examples directly:
+### 2. Run Test Suite
 ```bash
-python -m json.tool contracts/client_to_server_frame.schema.json
-python -m json.tool contracts/vision_to_agent_observation.schema.json
-python -m json.tool contracts/agent_to_client_action.schema.json
-python -m json.tool examples/frame_message.example.json
-python -m json.tool examples/observation.example.json
-python -m json.tool examples/action.example.json
+pytest tests/
+```
+
+### 3. Run Contract Validation Suite
+```bash
+python scripts/validate_contracts.py
+```
+
+### 4. Makefile Automation (Linux / macOS / WSL)
+```bash
+make check      # Run environment verification
+make test       # Run pytest test suite
+make validate   # Run contract validation
+make run        # Start FastAPI backend via uvicorn
 ```
 
 ---
@@ -99,5 +151,5 @@ python -m json.tool examples/action.example.json
 
 - **Competition:** OpenCV AI Competition 2026
 - **Primary Category:** Agentic Vision Award
-- **Core Vision Framework:** OpenCV 5 (`opencv-python-headless==5.0.0.93`)
-- **Hosting Strategy:** AWS Free Tier eligible (EC2 t4g/t3/t2, DynamoDB, S3) with $0 operating budget constraint.
+- **Core Vision Framework:** OpenCV 5 (`opencv-python-headless==5.0.0.93`, verified `cv2.__version__ == "5.0.0"`)
+- **Hosting Strategy:** AWS Free Tier eligible (EC2, DynamoDB, S3) with $0 operating budget constraint.

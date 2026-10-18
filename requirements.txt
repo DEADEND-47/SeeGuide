@@ -1,0 +1,19 @@
+# SeeGuide Stage 2 Pinned Dependencies
+# Core Vision Pipeline (OpenCV 5 Headless)
+opencv-python-headless==5.0.0.93
+
+# Web Server & Real-time WebSockets
+fastapi==0.136.1
+uvicorn[standard]==0.46.0
+websockets==16.1.1
+
+# Data Contracts, Schema Validation & Environment
+pydantic==2.13.3
+python-dotenv==1.2.2
+
+# AWS Storage & Telemetry (DynamoDB & S3)
+boto3==1.43.114
+
+# Testing Framework
+pytest==9.1.1
+pytest-asyncio==1.4.0

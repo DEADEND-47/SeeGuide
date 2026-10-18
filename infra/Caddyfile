@@ -1,0 +1,22 @@
+# SeeGuide Caddy Configuration (Automatic TLS with Let's Encrypt / DuckDNS)
+# Placeholder skeleton for Stage 9
+
+{$DOMAIN:seeguide.duckdns.org} {
+    encode gzip zstd
+
+    # WebSocket telemetry proxying to FastAPI backend
+    handle /ws/* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    # API health and endpoints
+    handle /api/* {
+        reverse_proxy 127.0.0.1:8000
+    }
+
+    # Static PWA assets
+    handle {
+        root * /var/www/seeguide/web
+        file_server
+    }
+}

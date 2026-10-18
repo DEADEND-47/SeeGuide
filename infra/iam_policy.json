@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SeeGuideDynamoDBAccess",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:Query",
+        "dynamodb:DescribeTable"
+      ],
+      "Resource": "arn:aws:dynamodb:*:*:table/seeguide_traces"
+    },
+    {
+      "Sid": "SeeGuideS3Access",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::seeguide-eval-clips/*"
+    }
+  ]
+}
