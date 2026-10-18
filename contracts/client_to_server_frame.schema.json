@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ClientToServerFrame",
+  "description": "Schema for client-to-server video frame telemetry sent over WebSocket",
+  "type": "object",
+  "required": [
+    "type",
+    "session_id",
+    "seq",
+    "ts_client",
+    "mode",
+    "image_b64",
+    "width",
+    "height",
+    "mime"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "frame",
+      "description": "Message type discriminator"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Unique session identifier for the client connection"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Monotonically increasing sequence number per session"
+    },
+    "ts_client": {
+      "type": "number",
+      "description": "Client timestamp in epoch seconds with fractional precision"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["walk", "read", "describe"],
+      "description": "Current operating mode requested by the user"
+    },
+    "image_b64": {
+      "type": "string",
+      "description": "Base64-encoded image payload (JPEG)"
+    },
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Frame pixel width"
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Frame pixel height"
+    },
+    "mime": {
+      "type": "string",
+      "enum": ["image/jpeg"],
+      "description": "MIME type of the encoded frame"
+    }
+  },
+  "additionalProperties": false
+}

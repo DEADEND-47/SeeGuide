@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VisionToAgentObservation",
+  "description": "Perception observation produced by OpenCV 5 vision pipeline for deterministic agent policy",
+  "type": "object",
+  "required": [
+    "t",
+    "quality",
+    "motion",
+    "corridor",
+    "objects",
+    "text",
+    "timing_ms"
+  ],
+  "properties": {
+    "t": {
+      "type": "number",
+      "description": "Observation epoch timestamp in seconds"
+    },
+    "quality": {
+      "type": "object",
+      "required": ["blur", "brightness", "stable"],
+      "properties": {
+        "blur": {
+          "type": "number",
+          "description": "Laplacian variance blur metric"
+        },
+        "brightness": {
+          "type": "number",
+          "description": "Mean luma/intensity value (0-255)"
+        },
+        "stable": {
+          "type": "boolean",
+          "description": "Whether camera frame is sufficiently stable for high-confidence inference"
+        }
+      },
+      "additionalProperties": false
+    },
+    "motion": {
+      "type": "object",
+      "required": ["corridor_divergence", "ego_motion"],
+      "properties": {
+        "corridor_divergence": {
+          "type": "number",
+          "description": "Flow divergence score measuring forward movement into corridor"
+        },
+        "ego_motion": {
+          "type": "number",
+          "description": "Magnitude of estimated camera ego-motion"
+        }
+      },
+      "additionalProperties": false
+    },
+    "corridor": {
+      "type": "object",
+      "required": ["edge_density", "blocked_score"],
+      "properties": {
+        "edge_density": {
+          "type": "number",
+          "description": "Fraction of edge pixels in navigation corridor"
+        },
+        "blocked_score": {
+          "type": "number",
+          "description": "Estimated probability/heuristic that the central path is obstructed (0.0 to 1.0)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "objects": {
+      "type": "array",
+      "description": "Detected objects within the frame",
+      "items": {
+        "type": "object",
+        "required": ["cls", "conf", "bbox", "growth", "zone"],
+        "properties": {
+          "cls": {
+            "type": "string",
+            "description": "Detected class label (e.g., person, chair, bicycle)"
+          },
+          "conf": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Detection confidence score"
+          },
+          "bbox": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "number"
+            },
+            "description": "Bounding box coordinates [x1, y1, x2, y2]"
+          },
+          "growth": {
+            "type": "number",
+            "description": "Ratio of bounding box area expansion relative to prior tracked frame (>1 indicates approach)"
+          },
+          "zone": {
+            "type": "string",
+            "enum": ["left", "center", "right"],
+            "description": "Horizontal corridor zone of the object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "text": {
+      "type": ["string", "null"],
+      "description": "Extracted OCR text if text reading pipeline was invoked, or null"
+    },
+    "timing_ms": {
+      "type": "object",
+      "required": ["fast", "detect", "ocr"],
+      "properties": {
+        "fast": {
+          "type": "number",
+          "description": "Execution time in milliseconds for fast-tier pipeline"
+        },
+        "detect": {
+          "type": ["number", "null"],
+          "description": "Execution time in milliseconds for detector tier, or null if skipped"
+        },
+        "ocr": {
+          "type": ["number", "null"],
+          "description": "Execution time in milliseconds for OCR tier, or null if skipped"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

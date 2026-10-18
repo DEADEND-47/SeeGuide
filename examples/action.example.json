@@ -1,0 +1,7 @@
+{
+  "type": "speak",
+  "text": "Stop. Person ahead, close.",
+  "priority": "P0",
+  "vibrate": true,
+  "reason": "approaching_object_in_corridor"
+}

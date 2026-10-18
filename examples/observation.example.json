@@ -1,0 +1,31 @@
+{
+  "t": 1729180000.12,
+  "quality": {
+    "blur": 38.2,
+    "brightness": 71,
+    "stable": false
+  },
+  "motion": {
+    "corridor_divergence": 0.62,
+    "ego_motion": 0.4
+  },
+  "corridor": {
+    "edge_density": 0.31,
+    "blocked_score": 0.7
+  },
+  "objects": [
+    {
+      "cls": "person",
+      "conf": 0.88,
+      "bbox": [220, 140, 380, 470],
+      "growth": 1.35,
+      "zone": "center"
+    }
+  ],
+  "text": null,
+  "timing_ms": {
+    "fast": 21,
+    "detect": 74,
+    "ocr": null
+  }
+}
