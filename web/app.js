@@ -38,10 +38,19 @@ class AudioManager {
     this.synth = window.speechSynthesis;
     this.queue = [];
     this.isSpeaking = false;
+    this.lastSpokenText = "";
+    this.lastSpokenTime = 0;
   }
 
   speak(text, priority = "P2") {
     if (!text || text.trim() === "") return;
+    const clean = text.trim();
+
+    // Deduplication check: suppress identical speech within 3.0 seconds unless it is P0
+    const now = Date.now();
+    if (priority !== "P0" && clean === this.lastSpokenText && now - this.lastSpokenTime < 3000) {
+      return;
+    }
 
     // CRITICAL: P0 Hazard immediately cancels all current and queued speech
     if (priority === "P0") {
@@ -50,8 +59,10 @@ class AudioManager {
       }
       this.queue = [];
       this.isSpeaking = false;
+      this.lastSpokenText = clean;
+      this.lastSpokenTime = now;
 
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(clean);
       utterance.rate = 1.15; // Slightly faster for emergency hazard
       utterance.pitch = 1.1;
       utterance.volume = 1.0;
@@ -63,7 +74,7 @@ class AudioManager {
     }
 
     // Lower priority speech (P1, P2, P3) queued normally
-    this.queue.push({ text, priority });
+    this.queue.push({ text: clean, priority, time: now });
     this.processQueue();
   }
 
@@ -71,6 +82,9 @@ class AudioManager {
     if (this.isSpeaking || this.queue.length === 0 || !this.synth) return;
 
     const item = this.queue.shift();
+    this.lastSpokenText = item.text;
+    this.lastSpokenTime = item.time;
+
     const utterance = new SpeechSynthesisUtterance(item.text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
@@ -171,6 +185,16 @@ class CameraManager {
       this.captureInterval = null;
     }
   }
+
+  stopCamera() {
+    this.stopCaptureLoop();
+    if (this.video.srcObject) {
+      this.video.srcObject.getTracks().forEach((track) => track.stop());
+      this.video.srcObject = null;
+    }
+    this.video.pause();
+    this.video.src = "";
+  }
 }
 
 class WebSocketClient {
@@ -266,6 +290,7 @@ class App {
     this.confirmPrompt = document.getElementById("confirm-prompt");
     this.btnConfirmYes = document.getElementById("btn-confirm-yes");
     this.btnConfirmNo = document.getElementById("btn-confirm-no");
+    this.btnCameraToggle = document.getElementById("btn-camera-toggle");
     this.demoSwitch = document.getElementById("demo-switch");
     this.demoUploadWrapper = document.getElementById("demo-upload-wrapper");
     this.videoFileInput = document.getElementById("video-file-input");
@@ -275,6 +300,8 @@ class App {
     this.canvasEl = document.getElementById("capture-canvas");
 
     this.activeConfirmId = null;
+    this.isCameraRunning = true;
+    this.previousFocusedElement = null;
 
     this.init();
   }
@@ -299,6 +326,11 @@ class App {
 
     const cameraStarted = await this.camera.startCamera();
     if (!cameraStarted) {
+      this.isCameraRunning = false;
+      if (this.btnCameraToggle) {
+        this.btnCameraToggle.textContent = "Start Camera";
+        this.btnCameraToggle.classList.add("stopped");
+      }
       this.updateStatus("Camera unavailable. Toggle Demo Mode to test video.", "P2");
     }
   }
@@ -308,8 +340,31 @@ class App {
     this.btnRead.addEventListener("click", () => this.switchMode("read"));
     this.btnDescribe.addEventListener("click", () => this.triggerDescribe());
 
+    if (this.btnCameraToggle) {
+      this.btnCameraToggle.addEventListener("click", () => this.toggleCamera());
+    }
+
     this.btnConfirmYes.addEventListener("click", () => this.respondConfirmation(true));
     this.btnConfirmNo.addEventListener("click", () => this.respondConfirmation(false));
+
+    // Handle Tab key trapping inside confirmation dialog
+    this.confirmDialog.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        if (e.shiftKey) {
+          if (document.activeElement === this.btnConfirmYes) {
+            this.btnConfirmNo.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === this.btnConfirmNo) {
+            this.btnConfirmYes.focus();
+            e.preventDefault();
+          }
+        }
+      } else if (e.key === "Escape") {
+        this.respondConfirmation(false);
+      }
+    });
 
     this.demoSwitch.addEventListener("change", (e) => {
       if (e.target.checked) {
@@ -338,6 +393,28 @@ class App {
         this.requestWakeLock();
       }
     });
+  }
+
+  async toggleCamera() {
+    if (this.isCameraRunning) {
+      this.camera.stopCamera();
+      this.isCameraRunning = false;
+      this.btnCameraToggle.textContent = "Start Camera";
+      this.btnCameraToggle.classList.add("stopped");
+      this.updateStatus("Camera stopped. Tap Start Camera to resume.", "P2");
+      this.audio.speak("Camera stopped.", "P2");
+    } else {
+      const started = await this.camera.startCamera();
+      if (started) {
+        this.isCameraRunning = true;
+        this.btnCameraToggle.textContent = "Stop Camera";
+        this.btnCameraToggle.classList.remove("stopped");
+        this.updateStatus("Camera started. Monitoring walking corridor.", "P2");
+        this.audio.speak("Camera started.", "P2");
+      } else {
+        this.updateStatus("Failed to restart camera.", "P2");
+      }
+    }
   }
 
   async requestWakeLock() {
@@ -438,9 +515,11 @@ class App {
   }
 
   showConfirmation(prompt, confirmId) {
+    this.previousFocusedElement = document.activeElement;
     this.activeConfirmId = confirmId;
     this.confirmPrompt.textContent = prompt;
     this.confirmDialog.style.display = "block";
+    this.btnConfirmYes.focus();
   }
 
   respondConfirmation(approved) {
@@ -453,6 +532,9 @@ class App {
     });
     this.audio.speak(`Confirmed ${approved ? "Yes" : "No"}.`, "P2");
     this.activeConfirmId = null;
+    if (this.previousFocusedElement && typeof this.previousFocusedElement.focus === "function") {
+      this.previousFocusedElement.focus();
+    }
   }
 
   updateStatus(message, priority) {

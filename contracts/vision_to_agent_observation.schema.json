@@ -109,6 +109,16 @@
       "type": ["string", "null"],
       "description": "Extracted OCR text if text reading pipeline was invoked, or null"
     },
+    "text_confidence": {
+      "type": ["number", "null"],
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Mean confidence score for recognized text (0.0 to 1.0)"
+    },
+    "text_clipped": {
+      "type": ["boolean", "null"],
+      "description": "True if detected text intersects frame border indicating reframing is required"
+    },
     "timing_ms": {
       "type": "object",
       "required": ["fast", "detect", "ocr"],

@@ -19,12 +19,14 @@ MANDATORY_ARTIFACTS = [
     ("docs/architecture.md", "Architecture & System Design"),
     ("docs/stage-reports/stage-1-report.md", "Stage 1 Audit Report"),
     ("docs/stage-reports/stage-9-report.md", "Stage 9 Audit Report"),
+    ("docs/stage-reports/stage-11-report.md", "Stage 11 Audit & Remediation Report"),
 
     # Infrastructure & Free Tier Deployment
     ("infra/deploy.sh", "EC2 Ubuntu Automated Deployment Script"),
     ("infra/Caddyfile", "Caddy TLS Reverse Proxy Configuration"),
     ("infra/dynamodb_setup.py", "DynamoDB Table & 7-Day TTL Setup Script"),
     ("infra/iam_policy.json", "Least-Privilege AWS IAM Policy"),
+    ("scripts/download_models.py", "Model Downloader & SHA256 Verifier"),
 
     # Empirical Results & Benchmarks
     ("eval/results/metrics.csv", "Empirical Evaluation Metrics vs Baselines"),
@@ -37,8 +39,9 @@ MANDATORY_ARTIFACTS = [
     ("server/main.py", "FastAPI Server with Security Middleware"),
     ("server/websocket_handler.py", "WebSocket Handler with 2MB Limit"),
     ("server/models.py", "Pydantic v2 Models Matching Contracts"),
-    ("server/storage.py", "Storage Abstractions & Mock Adapters"),
+    ("server/storage.py", "Storage Abstractions & AWS Adapters"),
     ("vision/pipeline.py", "OpenCV 5 Tiered Vision Pipeline"),
+    ("vision/model_cache.py", "Singleton Thread-Safe Model Cache"),
     ("agent/policy.py", "Deterministic 6-Rule Policy Engine"),
     ("agent/state.py", "BeliefState & Cooldown Tracker"),
 
@@ -47,6 +50,8 @@ MANDATORY_ARTIFACTS = [
     ("web/style.css", "High-Contrast Stylesheet & Focus Rings"),
     ("web/app.js", "PWA Client Logic & Priority Audio Queue"),
     ("web/manifest.json", "PWA Web App Manifest"),
+    ("web/icon-192.png", "PWA 192x192 PNG Icon"),
+    ("web/icon-512.png", "PWA 512x512 PNG Icon"),
 
     # Formal Schemas & Validation
     ("contracts/client_to_server_frame.schema.json", "Frame Ingestion JSON Schema"),

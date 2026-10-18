@@ -10,6 +10,7 @@ with comprehensive FR-16 failure handling, model timeouts, and graceful degradat
 
 import base64
 import logging
+from pathlib import Path
 import time
 from typing import Any, Dict, List, Optional, Union
 import cv2
@@ -46,11 +47,18 @@ class VisionPipeline:
         detector_model_path: Optional[str] = None,
         ocr_det_path: Optional[str] = None,
         ocr_rec_path: Optional[str] = None,
+        yunet_model_path: Optional[str] = None,
+        vocabulary_path: Optional[str] = None,
         timeout_ms: float = DEFAULT_TIMEOUT_MS,
     ):
         self.detector = ObjectDetector(model_path=detector_model_path)
         self.tracker = Tracker()
-        self.ocr = TextRecognizer(det_model_path=ocr_det_path, rec_model_path=ocr_rec_path)
+        self.ocr = TextRecognizer(
+            det_model_path=ocr_det_path,
+            rec_model_path=ocr_rec_path,
+            vocabulary_path=vocabulary_path,
+        )
+        self.yunet_model_path = yunet_model_path
         self.prev_frame: Optional[np.ndarray] = None
         self.timeout_ms = timeout_ms
 
@@ -153,6 +161,8 @@ class VisionPipeline:
         # 5. Text Detection & OCR Tier
         ocr_duration_ms: Optional[float] = None
         extracted_text: Optional[str] = None
+        text_confidence: Optional[float] = None
+        text_clipped: Optional[bool] = None
 
         if run_ocr:
             t_ocr_start = time.perf_counter()
@@ -169,6 +179,8 @@ class VisionPipeline:
                     extracted_text = None
                 else:
                     extracted_text = ocr_result.get("text")
+                    text_confidence = ocr_result.get("confidence")
+                    text_clipped = ocr_result.get("clipped")
             except Exception as ocr_err:
                 logger.warning("OCR tier failed: %s. Returning null text.", ocr_err)
                 ocr_duration_ms = round((time.perf_counter() - t_ocr_start) * 1000.0, 2)
@@ -205,6 +217,8 @@ class VisionPipeline:
                 for obj in tracked_objects
             ],
             text=extracted_text,
+            text_confidence=text_confidence,
+            text_clipped=text_clipped,
             timing_ms=TimingMetrics(
                 fast=fast_duration_ms,
                 detect=detect_duration_ms,

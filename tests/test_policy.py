@@ -35,23 +35,21 @@ def make_mock_observation(
     text: str = None,
     text_clipped: bool = False,
     text_confidence: float = 0.9,
+    status: str = "ok",
 ) -> VisionObservation:
-    """Helper to instantiate mock VisionObservation for deterministic tests."""
-    obs = VisionObservation(
+    """Helper to instantiate valid VisionObservation Pydantic models for deterministic policy tests."""
+    return VisionObservation(
         t=t,
         quality=QualityMetrics(blur=blur, brightness=brightness, stable=stable),
         motion=MotionMetrics(corridor_divergence=corridor_divergence, ego_motion=ego_motion),
         corridor=CorridorMetrics(edge_density=edge_density, blocked_score=blocked_score),
         objects=objects or [],
         text=text,
+        text_confidence=text_confidence if text is not None else None,
+        text_clipped=text_clipped,
         timing_ms=TimingMetrics(fast=12.0, detect=45.0, ocr=None),
+        status=status,
     )
-    # Attach dynamic test properties for OCR edge cases
-    if text_clipped:
-        object.__setattr__(obs, "text_clipped", True)
-    if text_confidence != 0.9:
-        object.__setattr__(obs, "text_confidence", text_confidence)
-    return obs
 
 
 # ====================================================================
@@ -87,6 +85,40 @@ def test_p0_hazard_cooldown():
     obs2 = make_mock_observation(t=101.0, objects=[obj])
     action2 = decide(obs2, state)
     assert action2.priority != "P0"
+    assert action2.type == "stay_silent"
+
+
+def test_p0_cooldown_expiration_fires_again():
+    """After cooldown window expires (t + 3.1s >= 3.0s), P0 warning can fire again."""
+    state = BeliefState(mode="walk")
+    obj = DetectedObject(cls="person", conf=0.9, bbox=[200, 150, 400, 450], growth=1.35, zone="center")
+    obs1 = make_mock_observation(t=100.0, objects=[obj])
+
+    action1 = decide(obs1, state)
+    assert action1.priority == "P0"
+    state.update(obs1, action1)
+
+    # After cooldown expires (103.5s > 100.0 + 3.0s)
+    obs_later = make_mock_observation(t=103.5, objects=[obj])
+    action_later = decide(obs_later, state)
+    assert action_later.priority == "P0"
+    assert action_later.reason == "approaching_object_in_corridor"
+
+
+def test_p1_path_blocked_cooldown():
+    """P1 path blocked guidance respects cooldown and avoids spamming advice."""
+    state = BeliefState(mode="walk")
+    obj1 = DetectedObject(cls="chair", conf=0.85, bbox=[50, 100, 150, 250], growth=1.0, zone="left")
+    obj2 = DetectedObject(cls="box", conf=0.80, bbox=[80, 260, 180, 400], growth=1.0, zone="left")
+    obs1 = make_mock_observation(t=200.0, blocked_score=0.85, objects=[obj1, obj2])
+
+    action1 = decide(obs1, state)
+    assert action1.priority == "P1"
+    state.update(obs1, action1)
+
+    # Next cycle within 4.0s cooldown window suppresses repetitive speech
+    obs2 = make_mock_observation(t=201.5, blocked_score=0.85, objects=[obj1, obj2])
+    action2 = decide(obs2, state)
     assert action2.type == "stay_silent"
 
 

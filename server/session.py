@@ -7,13 +7,14 @@ from typing import Dict, Optional
 from fastapi import WebSocket
 from agent.state import BeliefState
 from agent.trace import TraceLogger
+from server.config import get_settings
 from server.models import CommandMessage, FrameMessage, UserResponse
 from server.storage import get_trace_repo
 from vision.pipeline import VisionPipeline
 
 
 class Session:
-    """Represents an active client connection session."""
+    """Represents an active client connection session with audit telemetry."""
 
     def __init__(self, session_id: str, websocket: WebSocket):
         self.session_id: str = session_id
@@ -22,10 +23,26 @@ class Session:
         self.frame_buffer: asyncio.Queue[FrameMessage] = asyncio.Queue(maxsize=1)
         self.last_seq: int = -1
         self.is_active: bool = True
-        # End-to-End Perception, Agent State, and Audit Logging
-        self.pipeline: VisionPipeline = VisionPipeline()
+        
+        # Configure model paths from centralized settings
+        settings = get_settings()
+        self.pipeline: VisionPipeline = VisionPipeline(
+            detector_model_path=settings.DETECTOR_MODEL_PATH,
+            ocr_det_path=settings.OCR_DET_PATH,
+            ocr_rec_path=settings.OCR_REC_PATH,
+            yunet_model_path=settings.YUNET_MODEL_PATH,
+            vocabulary_path=settings.VOCABULARY_PATH,
+        )
         self.state: BeliefState = BeliefState(mode="walk")
         self.trace_logger: TraceLogger = TraceLogger(get_trace_repo())
+        
+        # Failure and degradation counters for trace auditing
+        self.failure_counters: Dict[str, int] = {
+            "timeouts": 0,
+            "degraded_cycles": 0,
+            "error_cycles": 0,
+            "dropped_frames": 0,
+        }
 
     async def put_frame(self, frame: FrameMessage) -> None:
         """Enforces latest-frame-wins: drops stale frame if queue is full, then puts new frame."""

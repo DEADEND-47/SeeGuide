@@ -1,0 +1,43 @@
+{
+  "timestamp": 1792324801.17,
+  "session_id": "sess_e2e_confirm_003",
+  "observation": {
+    "t": 1792324801.17,
+    "quality": {
+      "blur": 149.65,
+      "brightness": 133.18,
+      "stable": true
+    },
+    "motion": {
+      "corridor_divergence": 0.0,
+      "ego_motion": 0.0
+    },
+    "corridor": {
+      "edge_density": 0.012,
+      "blocked_score": 0.02
+    },
+    "objects": [],
+    "text": "Emergency exit staircase B. In case of fire do not use elevators.",
+    "text_confidence": 0.95,
+    "text_clipped": false,
+    "timing_ms": {
+      "fast": 2.96,
+      "detect": null,
+      "ocr": 0.0
+    },
+    "status": "ok"
+  },
+  "action": {
+    "type": "ask_confirmation",
+    "text": "Read the text aloud?",
+    "priority": "P2",
+    "vibrate": false,
+    "direction": null,
+    "request_id": "10",
+    "mode": "read",
+    "confirm_id": "confirm_read_mode",
+    "reason": "human_confirmation_required"
+  },
+  "reason": "human_confirmation_required",
+  "latency_ms": 8.59
+}

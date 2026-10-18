@@ -49,12 +49,22 @@ async def add_security_headers(request: Request, call_next):
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint confirming service status and environment mode."""
+    """Health check endpoint confirming service status, storage mode, and model availability."""
+    models_status = {
+        "detector": Path(settings.DETECTOR_MODEL_PATH).exists(),
+        "ocr_det": Path(settings.OCR_DET_PATH).exists(),
+        "ocr_rec": Path(settings.OCR_REC_PATH).exists(),
+        "face_detector": Path(settings.YUNET_MODEL_PATH).exists(),
+    }
+    all_models_loaded = all(models_status.values())
+
     return {
         "status": "ok",
         "service": "seeguide",
         "environment": settings.ENVIRONMENT,
         "mock_storage": settings.USE_MOCK_STORAGE,
+        "models_loaded": all_models_loaded,
+        "models_detail": models_status,
     }
 
 

@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     DYNAMODB_TRACE_TABLE: str = "seeguide-traces"
     S3_BUCKET_NAME: str = "seeguide-assets"
 
+    # OpenCV Zoo Model Paths
+    DETECTOR_MODEL_PATH: str = "models/yolox_nano.onnx"
+    OCR_DET_PATH: str = "models/text_detection_DB.onnx"
+    OCR_REC_PATH: str = "models/text_recognition_CRNN.onnx"
+    YUNET_MODEL_PATH: str = "models/face_detection_yunet.onnx"
+    VOCABULARY_PATH: str = "models/charset_36_EN.txt"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

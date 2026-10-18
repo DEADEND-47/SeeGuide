@@ -1,4 +1,4 @@
 system,hazard_recall,time_to_warn_ms,false_alarms_per_min,speech_reduction_pct,ocr_success_rate,silence_correctness
-SeeGuide,1.0,150.0,0.0,66.7,1.0,1.0
-B0,0.0,0.0,200.0,33.3,1.0,0.333
-B1,1.0,150.0,0.0,62.5,1.0,1.0
+SeeGuide,1.0,150.0,0.0,60.9,1.0,1.0
+B0,0.0,0.0,80.0,50.0,1.0,0.5
+B1,1.0,150.0,0.0,50.0,1.0,1.0

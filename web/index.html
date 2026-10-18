@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#000000">
   <meta name="description" content="SeeGuide - Privacy-first phone-camera assistant for blind and low-vision pedestrians">
   <title>SeeGuide Assistant</title>
@@ -31,14 +31,22 @@
       </div>
     </section>
 
+    <!-- Camera Control Bar -->
+    <div class="camera-control-bar">
+      <button id="btn-camera-toggle" class="btn-camera" aria-label="Stop camera stream">
+        Stop Camera
+      </button>
+    </div>
+
     <!-- Human-in-the-Loop Confirmation Dialog (Hidden until triggered) -->
-    <section id="confirmation-dialog" class="confirmation-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="confirm-prompt">
+    <div id="confirmation-dialog" class="confirmation-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="confirm-prompt" aria-describedby="confirm-desc">
       <div id="confirm-prompt" class="confirmation-prompt">Confirmation required</div>
+      <p id="confirm-desc" class="sr-only">Choose Yes to proceed with spoken text, or No to dismiss.</p>
       <div class="confirmation-actions">
         <button id="btn-confirm-yes" class="btn-confirm btn-yes" aria-label="Confirm yes">Yes</button>
         <button id="btn-confirm-no" class="btn-confirm btn-no" aria-label="Confirm no">No</button>
       </div>
-    </section>
+    </div>
 
     <!-- Primary Operating Modes -->
     <section class="modes-grid" role="region" aria-label="Operating Modes">

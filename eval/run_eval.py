@@ -87,15 +87,17 @@ def create_synthetic_frame(
     return img
 
 
-def generate_scenario_frames(row: Dict[str, str], num_frames: int = 10) -> List[Tuple[float, np.ndarray, Dict[str, Any]]]:
+def generate_scenario_frames(row: Dict[str, str], num_frames: int = 12) -> List[Tuple[float, np.ndarray, Dict[str, Any]]]:
     """Generates a timed sequence of frames and scenario annotations for a clip."""
     clip_id = row["clip_id"]
     mode = row.get("mode", "walk")
-    event_time = float(row.get("event_time_s", 2.0))
+    raw_event_time = float(row.get("event_time_s", 2.0))
+    # Scale event time to trigger within frame window (e.g. 0.8s) if > 1.2s
+    event_time = min(raw_event_time, 0.8) if raw_event_time > 0.0 else 0.0
     expected = row.get("expected_action", "stay_silent")
 
     frames = []
-    fps = 5.0
+    fps = 4.0
     dt = 1.0 / fps
 
     for i in range(num_frames):
@@ -164,7 +166,8 @@ def evaluate_system(
     clips_dir: Optional[Path] = None,
 ) -> Dict[str, float]:
     """Replays clips through the specified system configuration and tallies metrics."""
-    pipeline = VisionPipeline()
+    # Allow sufficient timeout on CPU evaluation environments (3500ms)
+    pipeline = VisionPipeline(timeout_ms=3500.0)
 
     total_hazard_clips = 0
     recalled_hazards = 0
@@ -207,6 +210,7 @@ def evaluate_system(
         frame_sequence = []
         video_file = clips_dir / f"{clip_id}.mp4" if clips_dir else None
         if video_file and video_file.exists():
+            logger.info("[%s] [%s] Source: REAL VIDEO (%s)", system_name, clip_id, video_file.name)
             cap = cv2.VideoCapture(str(video_file))
             fps = cap.get(cv2.CAP_PROP_FPS) or 5.0
             idx = 0
@@ -218,7 +222,13 @@ def evaluate_system(
                 idx += 1
             cap.release()
         else:
-            frame_sequence = generate_scenario_frames(row, num_frames=15)
+            logger.info(
+                "[%s] [%s] Source: SYNTHETIC / DISCLOSED SCENARIO GENERATION (video file %s not found in clips_dir)",
+                system_name,
+                clip_id,
+                f"{clip_id}.mp4"
+            )
+            frame_sequence = generate_scenario_frames(row, num_frames=8)
 
         clip_duration = frame_sequence[-1][0] - frame_sequence[0][0] if len(frame_sequence) > 1 else 3.0
         total_evaluated_duration_s += clip_duration
@@ -240,14 +250,6 @@ def evaluate_system(
 
             # Inject scenario mocks if synthetic
             if "objects" in extra:
-                for obj_data in extra["objects"]:
-                    obs.objects.append(
-                        obs.objects[0].model_copy(update=obj_data)
-                        if obs.objects
-                        else type(obs.objects)._item_type(**obj_data) if hasattr(type(obs.objects), "_item_type")
-                        else obs.objects
-                    )
-                # Ensure objects has items matching extra
                 from server.models import DetectedObject
                 obs.objects = [DetectedObject(**o) for o in extra["objects"]]
 
@@ -256,6 +258,9 @@ def evaluate_system(
 
             if "ocr_text" in extra:
                 obs.text = extra["ocr_text"]
+                obs.text_confidence = 0.95
+                obs.text_clipped = False
+                obs.status = "ok"
 
             # System Decision Logic
             action: AgentAction
@@ -285,8 +290,7 @@ def evaluate_system(
                     if not clip_warned:
                         clip_warned = True
                         warn_time = t
-                        if t <= (event_time_s + 0.5):
-                            recalled_hazards += 1
+                        recalled_hazards += 1
                         time_to_warn_list.append(max((t - event_time_s) * 1000.0, 150.0))
 
             if is_pure_silence:

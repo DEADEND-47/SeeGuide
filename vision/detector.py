@@ -1,6 +1,6 @@
 """SeeGuide Object Detector Wrapper
 Integrates OpenCV Zoo ONNX object detectors (e.g. YOLOX-nano) via cv2.dnn
-with safe offline fallback for local zero-dependency testing.
+using the thread-safe process-wide ModelCache. Eliminates silent dummy modes.
 """
 
 import logging
@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import cv2
 import numpy as np
+
+from vision.model_cache import model_cache
 
 logger = logging.getLogger("seeguide.vision.detector")
 
@@ -27,7 +29,7 @@ COCO_CLASSES = [
 
 
 class ObjectDetector:
-    """OpenCV Zoo ONNX Object Detector using cv2.dnn backend."""
+    """OpenCV Zoo ONNX Object Detector using thread-safe ModelCache."""
 
     def __init__(
         self,
@@ -35,39 +37,38 @@ class ObjectDetector:
         conf_threshold: float = 0.45,
         nms_threshold: float = 0.45,
         input_size: tuple[int, int] = (416, 416),
+        strict_load: bool = False,
     ):
         self.conf_threshold = conf_threshold
         self.nms_threshold = nms_threshold
         self.input_size = input_size
-        self.net: Optional[cv2.dnn.Net] = None
-        self.is_dummy: bool = True
+        self.model_path = model_path or "models/yolox_nano.onnx"
+        self.strict_load = strict_load
 
-        model_file = Path(model_path) if model_path else Path("models/yolox_nano.onnx")
-        if model_file.exists():
-            try:
-                self.net = cv2.dnn.readNetFromONNX(str(model_file))
-                self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-                self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-                self.is_dummy = False
-                logger.info("Loaded ONNX object detector from %s", model_file)
-            except Exception as e:
-                logger.warning("Failed to initialize cv2.dnn model from %s: %s. Using dummy fallback.", model_file, e)
-                self.is_dummy = True
-        else:
-            logger.info("ONNX model file not found at %s. Operating in safe offline dummy mode.", model_file)
-            self.is_dummy = True
+        # Verify model file existence
+        path = Path(self.model_path)
+        if not path.exists():
+            msg = f"Object detector model weights not found at: {path}."
+            if self.strict_load:
+                raise FileNotFoundError(msg)
+            else:
+                logger.warning("%s Inference calls will raise FileNotFoundError.", msg)
 
     def detect(self, frame: np.ndarray) -> List[Dict[str, Any]]:
-        """Runs object detection on input frame.
+        """Runs object detection on input frame using cached model and inference lock.
 
         Args:
             frame: Input BGR image.
 
         Returns:
             List of detected objects with keys: cls, conf, bbox [x1, y1, x2, y2].
+
+        Raises:
+            FileNotFoundError if model file does not exist (handled gracefully by VisionPipeline as degraded).
         """
-        if self.is_dummy or self.net is None:
-            return []
+        net, lock = model_cache.get_detector(self.model_path)
+        if net is None:
+            raise RuntimeError("ModelCache returned None for object detector.")
 
         h, w = frame.shape[:2]
         blob = cv2.dnn.blobFromImage(
@@ -78,8 +79,10 @@ class ObjectDetector:
             swapRB=True,
             crop=False,
         )
-        self.net.setInput(blob)
-        outputs = self.net.forward()
+
+        with lock:
+            net.setInput(blob)
+            outputs = net.forward()
 
         # Handle YOLOX / standard detector outputs
         # Output shape is typically [1, num_proposals, 85] (5 box metrics + 80 classes)

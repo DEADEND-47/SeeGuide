@@ -1,19 +1,22 @@
 """SeeGuide Privacy Tier
-Face detection and irreversible Gaussian blur anonymization using OpenCV YuNet (cv2.FaceDetectorYN).
+Face detection and irreversible Gaussian blur anonymization using OpenCV YuNet (cv2.FaceDetectorYN)
+via the thread-safe process-wide ModelCache. Eliminates silent dummy modes.
 Guarantees bystander privacy before any frame or trace snapshot is persisted.
 """
 
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional, Union
 import cv2
 import numpy as np
+
+from vision.model_cache import model_cache
 
 logger = logging.getLogger("seeguide.vision.privacy")
 
 
 class FaceAnonymizer:
-    """Detects faces using OpenCV Zoo YuNet and applies irreversible Gaussian blur."""
+    """Detects faces using OpenCV Zoo YuNet and applies irreversible Gaussian blur using ModelCache."""
 
     def __init__(
         self,
@@ -21,34 +24,21 @@ class FaceAnonymizer:
         conf_threshold: float = 0.6,
         nms_threshold: float = 0.3,
         input_size: tuple[int, int] = (320, 320),
+        strict_load: bool = False,
     ):
         self.conf_threshold = conf_threshold
         self.nms_threshold = nms_threshold
         self.input_size = input_size
-        self.detector = None
-        self.is_dummy = True
+        self.model_path = model_path or "models/face_detection_yunet.onnx"
+        self.strict_load = strict_load
 
-        model_file = Path(model_path) if model_path else Path("models/face_detection_yunet.onnx")
-        if model_file.exists():
-            try:
-                self.detector = cv2.FaceDetectorYN.create(
-                    model=str(model_file),
-                    config="",
-                    input_size=self.input_size,
-                    score_threshold=self.conf_threshold,
-                    nms_threshold=self.nms_threshold,
-                    top_k=50,
-                    backend_id=cv2.dnn.DNN_BACKEND_OPENCV,
-                    target_id=cv2.dnn.DNN_TARGET_CPU,
-                )
-                self.is_dummy = False
-                logger.info("Loaded YuNet face detector from %s", model_file)
-            except Exception as e:
-                logger.warning("Failed to initialize FaceDetectorYN from %s: %s. Using dummy fallback.", model_file, e)
-                self.is_dummy = True
-        else:
-            logger.info("YuNet model file not found at %s. Operating in safe offline dummy mode.", model_file)
-            self.is_dummy = True
+        path = Path(self.model_path)
+        if not path.exists():
+            msg = f"YuNet face detector model weights missing at: {path}."
+            if self.strict_load:
+                raise FileNotFoundError(msg)
+            else:
+                logger.warning("%s Face blurring will raise FileNotFoundError.", msg)
 
     def blur_faces(self, frame: np.ndarray) -> np.ndarray:
         """Detects faces in frame and applies heavy Gaussian blur to face regions.
@@ -58,22 +48,33 @@ class FaceAnonymizer:
 
         Returns:
             Anonymized copy of the image.
+
+        Raises:
+            FileNotFoundError if YuNet model weights do not exist.
         """
         if frame is None or frame.size == 0:
             return frame
 
         out = frame.copy()
-        if self.is_dummy or self.detector is None:
-            return out
+        detector, lock = model_cache.get_face_detector(
+            self.model_path,
+            input_size=self.input_size,
+            conf_threshold=self.conf_threshold,
+            nms_threshold=self.nms_threshold,
+        )
+
+        if detector is None:
+            raise RuntimeError("ModelCache returned None for face detector.")
 
         h, w = frame.shape[:2]
-        self.detector.setInputSize((w, h))
 
-        try:
-            _, faces = self.detector.detect(frame)
-        except Exception as e:
-            logger.warning("Face detection failed: %s", e)
-            return out
+        with lock:
+            detector.setInputSize((w, h))
+            try:
+                _, faces = detector.detect(frame)
+            except Exception as e:
+                logger.warning("Face detection failed during execution: %s", e)
+                return out
 
         if faces is not None and len(faces) > 0:
             for face in faces:
@@ -103,3 +104,28 @@ def blur_faces(frame: np.ndarray, model_path: Optional[str] = None) -> np.ndarra
         anonymizer = FaceAnonymizer(model_path=model_path)
         return anonymizer.blur_faces(frame)
     return _default_anonymizer.blur_faces(frame)
+
+
+def enforce_blur_before_persist(
+    image_input: Union[np.ndarray, bytes],
+    model_path: Optional[str] = None
+) -> bytes:
+    """Guarantees bystander privacy by applying irreversible Gaussian face blur
+
+    before any frame is written to disk or uploaded to cloud storage.
+    Accepts BGR numpy array or JPEG/PNG byte buffer; returns encoded JPEG bytes.
+    """
+    if isinstance(image_input, bytes):
+        nparr = np.frombuffer(image_input, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is None:
+            raise ValueError("Failed to decode image bytes for privacy face blurring.")
+    else:
+        img = image_input
+
+    # Apply face blur
+    blurred_img = blur_faces(img, model_path=model_path)
+    success, encoded_buf = cv2.imencode(".jpg", blurred_img, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    if not success:
+        raise RuntimeError("Failed to encode anonymized image to JPEG.")
+    return encoded_buf.tobytes()

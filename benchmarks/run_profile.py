@@ -139,6 +139,7 @@ def run_profiler(
         max_v = round(float(np.max(arr)), 2)
         budget = TIMING_BUDGETS_MS.get(stage, 100.0)
         pass_budget = p95 <= budget
+        detector_backend = "yolox_nano_onnx" if Path("models/yolox_nano.onnx").exists() else "dummy"
 
         results.append({
             "stage": stage,
@@ -148,6 +149,7 @@ def run_profiler(
             "max_ms": max_v,
             "budget_ms": budget,
             "pass_budget": pass_budget,
+            "detector_backend": detector_backend,
             "python_version": py_version,
             "opencv_version": cv_version,
             "instance_type": instance_type,
@@ -162,6 +164,7 @@ def run_profiler(
         "max_ms",
         "budget_ms",
         "pass_budget",
+        "detector_backend",
         "python_version",
         "opencv_version",
         "instance_type",

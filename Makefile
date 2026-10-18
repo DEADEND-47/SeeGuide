@@ -1,4 +1,4 @@
-.PHONY: help setup check test validate run clean
+.PHONY: help setup check test validate models run clean
 
 PYTHON ?= python
 VENV_DIR ?= .venv
@@ -9,6 +9,7 @@ help:
 	@echo "  check     - Verify runtime environment (Python >=3.11, OpenCV 5.x, FastAPI)"
 	@echo "  test      - Run test suite with pytest"
 	@echo "  validate  - Run contract validation suite against schemas"
+	@echo "  models    - Download and verify OpenCV Zoo ONNX model weights"
 	@echo "  run       - Start FastAPI WebSocket server via uvicorn"
 	@echo "  clean     - Remove temporary caches and artifacts"
 
@@ -25,6 +26,9 @@ test:
 
 validate:
 	$(PYTHON) scripts/validate_contracts.py
+
+models:
+	$(PYTHON) scripts/download_models.py
 
 run:
 	uvicorn server.main:app --reload --host 0.0.0.0 --port 8000

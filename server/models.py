@@ -95,6 +95,8 @@ class VisionObservation(StrictBaseModel):
     corridor: CorridorMetrics
     objects: List[DetectedObject] = Field(default_factory=list, description="List of detected objects")
     text: Optional[str] = Field(None, description="Extracted OCR text or null")
+    text_confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Mean OCR confidence score")
+    text_clipped: Optional[bool] = Field(None, description="True if text touches image frame boundary")
     timing_ms: TimingMetrics
     status: Literal["ok", "degraded", "error"] = Field("ok", description="Pipeline execution health status")
 

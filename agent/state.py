@@ -87,6 +87,10 @@ class BeliefState:
                 for obj in observation.objects:
                     if obj.zone == "center" and obj.growth >= 1.25:
                         self.set_hazard_cooldown(f"hazard_{obj.cls}_center", t + 3.0)
+            elif action.reason == "corridor_blocked_guidance":
+                # Set P1 path blocked cooldown for 4.0 seconds
+                for side in ("left", "right"):
+                    self.set_hazard_cooldown(f"path_blocked_{side}", t + 4.0)
 
         elif action.type == "request_reframe":
             self.active_reframe = {
