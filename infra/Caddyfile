@@ -1,22 +1,27 @@
-# SeeGuide Caddy Configuration (Automatic TLS with Let's Encrypt / DuckDNS)
-# Placeholder skeleton for Stage 9
+# SeeGuide Caddy Configuration (Automatic Let's Encrypt TLS / DuckDNS)
+# Reverse proxy terminating TLS and routing to local FastAPI backend on port 8000.
+#
+# Environment Variable Setup:
+#   Set DOMAIN in your environment or systemd service, e.g.:
+#     export DOMAIN="seeguide.duckdns.org"
+#   DuckDNS token setup can be automated via cron or DuckDNS curl update script.
 
 {$DOMAIN:seeguide.duckdns.org} {
+    reverse_proxy localhost:8000
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+    }
+
     encode gzip zstd
 
-    # WebSocket telemetry proxying to FastAPI backend
-    handle /ws/* {
-        reverse_proxy 127.0.0.1:8000
-    }
-
-    # API health and endpoints
-    handle /api/* {
-        reverse_proxy 127.0.0.1:8000
-    }
-
-    # Static PWA assets
-    handle {
-        root * /var/www/seeguide/web
-        file_server
+    # Logging for audit and security monitoring
+    log {
+        output file /var/log/caddy/seeguide_access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
     }
 }

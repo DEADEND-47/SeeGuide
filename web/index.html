@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <header role="banner">
     <h1>SeeGuide</h1>
@@ -18,12 +19,14 @@
     </div>
   </header>
 
-  <main role="main">
+  <main id="main-content" role="main">
 
     <!-- Active Agent Speech & Auditory Feedback Region -->
     <section class="feedback-container" id="feedback-panel" aria-labelledby="feedback-heading">
       <h2 id="feedback-heading" class="feedback-label">Agent Feedback</h2>
-      <div id="status-text" class="feedback-text" role="status" aria-live="assertive">
+      <!-- High-priority hazard alert region for immediate assistive tech announcement -->
+      <div id="hazard-alert" role="alert" aria-live="assertive" class="sr-only"></div>
+      <div id="status-text" class="feedback-text" role="status" aria-live="polite">
         Ready. Starting camera...
       </div>
     </section>

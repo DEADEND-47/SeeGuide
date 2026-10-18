@@ -416,11 +416,18 @@ class App {
       this.haptics.vibrate(action.priority);
     }
 
-    // 3. Visual UI Updates
+    // 3. Visual UI Updates & Screen Reader Alert Region
+    const hazardEl = document.getElementById("hazard-alert");
     if (action.priority === "P0") {
       this.feedbackPanel.classList.add("hazard");
+      if (hazardEl) {
+        hazardEl.textContent = action.text || "Warning: Hazard ahead!";
+      }
     } else {
       this.feedbackPanel.classList.remove("hazard");
+      if (hazardEl) {
+        hazardEl.textContent = "";
+      }
     }
 
     if (action.type === "ask_confirmation") {

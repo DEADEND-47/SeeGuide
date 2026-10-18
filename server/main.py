@@ -3,7 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.staticfiles import StaticFiles
 from server.config import get_settings
 from server.websocket_handler import handle_websocket
@@ -32,9 +32,19 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SeeGuide Assistant API",
     description="Privacy-first phone-camera assistant for blind and low-vision users (OpenCV AI Competition 2026)",
-    version="0.6.0",
+    version="0.9.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Injects strict HTTP security headers for clickjacking, MIME sniffing, and HSTS compliance."""
+    response: Response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
 @app.get("/health")

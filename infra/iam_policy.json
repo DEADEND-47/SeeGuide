@@ -10,7 +10,7 @@
         "dynamodb:Query",
         "dynamodb:DescribeTable"
       ],
-      "Resource": "arn:aws:dynamodb:*:*:table/seeguide_traces"
+      "Resource": "arn:aws:dynamodb:*:*:table/seeguide-traces"
     },
     {
       "Sid": "SeeGuideS3Access",
@@ -20,6 +20,16 @@
         "s3:GetObject"
       ],
       "Resource": "arn:aws:s3:::seeguide-eval-clips/*"
+    },
+    {
+      "Sid": "SeeGuideCloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:log-group:/aws/ec2/seeguide/*"
     }
   ]
 }

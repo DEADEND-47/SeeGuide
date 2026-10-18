@@ -6,7 +6,7 @@ and orchestrates the live perception -> decision -> trace -> action loop.
 import asyncio
 import logging
 import time
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket, WebSocketDisconnect, status
 from agent.policy import decide
 from server.models import (
     AgentAction,
@@ -18,6 +18,9 @@ from server.models import (
 from server.session import Session, session_manager
 
 logger = logging.getLogger("seeguide.websocket")
+
+# Security: Maximum inbound WebSocket payload size (2MB) to prevent memory exhaustion DoS
+MAX_MESSAGE_BYTES: int = 2 * 1024 * 1024
 
 
 async def frame_processor_loop(
@@ -126,6 +129,22 @@ async def receive_loop(
         try:
             raw_text = await websocket.receive_text()
         except asyncio.CancelledError:
+            break
+
+        # Security: Enforce strict maximum payload size to prevent memory exhaustion DoS
+        payload_bytes = len(raw_text.encode("utf-8"))
+        if payload_bytes > MAX_MESSAGE_BYTES:
+            logger.warning(
+                "Session %s exceeded maximum allowed message size (%d bytes > %d bytes). Terminating connection.",
+                session.session_id,
+                payload_bytes,
+                MAX_MESSAGE_BYTES,
+            )
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION,
+                reason="Message size exceeds 2MB limit",
+            )
+            session.is_active = False
             break
 
         try:
