@@ -1,3 +1,9 @@
-clip_id,start_s,end_s,hazard_type,ground_truth_zone,expected_action
-sample_corridor_01,1.2,3.4,person_approaching,center,speak
-sample_corridor_02,0.0,4.0,none,none,stay_silent
+clip_id,expected_action,event_time_s,mode,notes
+clip_01_looming_pedestrian,speak,2.5,walk,Approaching pedestrian in center corridor triggers P0 hazard
+clip_02_clear_corridor,stay_silent,0.0,walk,Clear corridor nominal walk with zero false alarms
+clip_03_path_blocked,speak,3.0,walk,Multiple obstacles blocking central corridor triggers P1 guidance
+clip_04_blurry_camera,request_reframe,1.5,walk,Camera blur or low illumination triggers quality reframe
+clip_05_door_sign_short,speak,2.0,read,Short door sign text read aloud directly
+clip_06_door_sign_long,ask_confirmation,2.0,read,Lengthy exit route signage triggers confirmation dialogue
+clip_07_ambient_obstacle,speak,4.0,walk,Unannounced bench on right corridor edge triggers P3 notice
+clip_08_looming_cyclist,speak,1.8,walk,Fast-moving obstacle in center triggers rapid P0 warning

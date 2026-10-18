@@ -96,6 +96,7 @@ class VisionObservation(StrictBaseModel):
     objects: List[DetectedObject] = Field(default_factory=list, description="List of detected objects")
     text: Optional[str] = Field(None, description="Extracted OCR text or null")
     timing_ms: TimingMetrics
+    status: Literal["ok", "degraded", "error"] = Field("ok", description="Pipeline execution health status")
 
     @classmethod
     def from_json_str(cls, raw: Union[str, bytes]) -> "VisionObservation":

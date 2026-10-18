@@ -13,9 +13,9 @@
 
 ## Development Status
 
-- **Current Stage:** **Stage 7 of 10** — *End-to-End Integration and Live Perception Loop*
-- **Stage Goal:** Wire the WebSocket telemetry handler, OpenCV 5 tiered vision pipeline, deterministic agent policy engine, trace persistence repository, and frontend PWA into a continuous, real-time perception-decision-action loop. Enforce state-driven tier gating (`needs_detector`, `needs_ocr`), active perception human confirmation dialogues, and latest-frame-wins latency policy.
-- **Stages 1–6 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, mock storage, OpenCV 5 vision pipeline, deterministic agent engine, and accessible frontend PWA are preserved and fully tested.
+- **Current Stage:** **Stage 8 of 10** — *Advanced Reliability, Evaluation, Profiling, and Failure Handling*
+- **Stage Goal:** Implement robust failure handling and containment (FR-16 safe "I'm not sure" fallback upon timeouts or degraded perception), full offline evaluation replay harness (`eval/run_eval.py`) comparing against naive (B0) and ablation (B1) baselines to generate `eval/results/metrics.csv`, and latency profiler (`benchmarks/run_profile.py`) generating `benchmarks/results/profile.csv` with p50/p95 latencies across all vision and agent stages.
+- **Stages 1–7 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, mock storage, OpenCV 5 vision pipeline, deterministic agent engine, accessible frontend PWA, and end-to-end integration loop are preserved and fully tested.
 
 ---
 

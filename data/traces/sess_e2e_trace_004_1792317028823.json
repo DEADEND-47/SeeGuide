@@ -1,0 +1,41 @@
+{
+  "timestamp": 1792317028.81,
+  "session_id": "sess_e2e_trace_004",
+  "observation": {
+    "t": 1792317028.81,
+    "quality": {
+      "blur": 149.65,
+      "brightness": 133.18,
+      "stable": true
+    },
+    "motion": {
+      "corridor_divergence": 0.0,
+      "ego_motion": 0.0
+    },
+    "corridor": {
+      "edge_density": 0.012,
+      "blocked_score": 0.02
+    },
+    "objects": [],
+    "text": null,
+    "timing_ms": {
+      "fast": 3.71,
+      "detect": 0.0,
+      "ocr": null
+    },
+    "status": "ok"
+  },
+  "action": {
+    "type": "stay_silent",
+    "text": "",
+    "priority": "P3",
+    "vibrate": false,
+    "direction": null,
+    "request_id": "42",
+    "mode": "walk",
+    "confirm_id": null,
+    "reason": "scene_unchanged"
+  },
+  "reason": "scene_unchanged",
+  "latency_ms": 8.95
+}

@@ -1,0 +1,41 @@
+{
+  "timestamp": 100.0,
+  "session_id": "test-session-buffer",
+  "observation": {
+    "t": 100.0,
+    "quality": {
+      "blur": 0.0,
+      "brightness": 0.0,
+      "stable": false
+    },
+    "motion": {
+      "corridor_divergence": 0.0,
+      "ego_motion": 0.0
+    },
+    "corridor": {
+      "edge_density": 0.0,
+      "blocked_score": 0.0
+    },
+    "objects": [],
+    "text": null,
+    "timing_ms": {
+      "fast": 0.0,
+      "detect": null,
+      "ocr": null
+    },
+    "status": "error"
+  },
+  "action": {
+    "type": "speak",
+    "text": "I'm not sure. Please hold the camera steady.",
+    "priority": "P2",
+    "vibrate": false,
+    "direction": null,
+    "request_id": "1",
+    "mode": "walk",
+    "confirm_id": null,
+    "reason": "uncertainty_fallback"
+  },
+  "reason": "uncertainty_fallback",
+  "latency_ms": 5.13
+}

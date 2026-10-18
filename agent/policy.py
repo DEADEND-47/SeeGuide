@@ -1,5 +1,6 @@
 """SeeGuide Deterministic Agent Policy Engine
 Executes rule-based arbitration mapping perception observations to prioritized actions:
+Rule 0: Uncertainty & Pipeline Failure Handling (FR-16 safe "I'm not sure" fallback)
 Rule 1: P0 Hazard (looming collision in center corridor)
 Rule 2: P1 Path Blocked (corridor obstruction guidance)
 Rule 3: Quality Gate (low blur or extreme lighting reframing)
@@ -25,6 +26,29 @@ def decide(observation: VisionObservation, state: BeliefState) -> AgentAction:
         Deterministic AgentAction to dispatch to client device.
     """
     t = observation.t
+
+    # ====================================================================
+    # Rule 0: Uncertainty & Pipeline Failure Handling (FR-16)
+    # Model timeouts, degraded pipelines, or low detection confidence
+    # yield a safe, transparent "I'm not sure" fallback — never a confident hazard guess.
+    # ====================================================================
+    status = getattr(observation, "status", "ok")
+    if status in ("degraded", "error"):
+        return speak(
+            text="I'm not sure. Please hold the camera steady.",
+            priority="P2",
+            vibrate=False,
+            reason="uncertainty_fallback",
+        )
+
+    # Check for low confidence fallback across detected objects
+    if observation.objects and all(obj.conf < 0.35 for obj in observation.objects):
+        return speak(
+            text="I'm not sure. Please hold the camera steady.",
+            priority="P2",
+            vibrate=False,
+            reason="uncertainty_fallback",
+        )
 
     # ====================================================================
     # Rule 1: P0 Hazard (Looming Obstacle in Center Corridor)

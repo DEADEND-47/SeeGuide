@@ -127,6 +127,11 @@
         }
       },
       "additionalProperties": false
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "degraded", "error"],
+      "description": "Pipeline execution health status (ok, degraded, error)"
     }
   },
   "additionalProperties": false
