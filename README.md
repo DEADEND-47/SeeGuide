@@ -13,9 +13,9 @@
 
 ## Development Status
 
-- **Current Stage:** **Stage 4 of 10** — *Core Vision Pipeline*
-- **Stage Goal:** Implement modular OpenCV 5 computer vision processing (fast-tier blur/luma/motion/edge density, ONNX YOLOX-nano detector wrapper with dummy fallback, IoU obstacle tracker with looming growth calculation, corridor hazard estimator, DB/CRNN scene text OCR wrapper, YuNet face blur privacy filter, and `VisionPipeline` orchestrator producing `VisionObservation` Pydantic models).
-- **Stages 1–3 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, and mock storage are preserved and tested.
+- **Current Stage:** **Stage 5 of 10** — *Agent Runtime and Policy Engine*
+- **Stage Goal:** Implement the deterministic, rule-based agent decision engine (`BeliefState` tracking, tool registry factory functions, 6-rule priority policy arbiter, and `TraceLogger` telemetry recorder integration).
+- **Stages 1–4 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, mock storage, and OpenCV 5 vision pipeline are preserved and tested.
 
 ---
 
