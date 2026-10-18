@@ -240,6 +240,12 @@ class WebSocketClient {
       }
     }
   }
+
+  sendMessage(message) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    }
+  }
 }
 
 class App {
@@ -346,6 +352,10 @@ class App {
 
   switchMode(mode) {
     this.session.setMode(mode);
+    this.wsClient.sendMessage({
+      type: "command",
+      command: mode,
+    });
     if (mode === "walk") {
       this.btnWalk.classList.add("active");
       this.btnWalk.setAttribute("aria-pressed", "true");
@@ -366,6 +376,10 @@ class App {
   triggerDescribe() {
     this.updateStatus("Requesting scene description...", "P2");
     this.audio.speak("Analyzing scene.", "P2");
+    this.wsClient.sendMessage({
+      type: "command",
+      command: "describe",
+    });
     // Send immediate describe trigger frame with describe mode
     const priorMode = this.session.currentMode;
     this.session.setMode("describe");
@@ -392,8 +406,8 @@ class App {
   handleAgentAction(action) {
     if (!action) return;
 
-    // 1. Auditory Feedback
-    if (action.text && action.type !== "stay_silent") {
+    // 1. Auditory Feedback (ignore silent and internal log events)
+    if (action.text && action.type !== "stay_silent" && action.type !== "log_event") {
       this.audio.speak(action.text, action.priority);
     }
 
@@ -411,7 +425,7 @@ class App {
 
     if (action.type === "ask_confirmation") {
       this.showConfirmation(action.text, action.confirm_id);
-    } else if (action.text && action.type !== "stay_silent") {
+    } else if (action.text && action.type !== "stay_silent" && action.type !== "log_event") {
       this.updateStatus(action.text, action.priority);
     }
   }
@@ -424,8 +438,13 @@ class App {
 
   respondConfirmation(approved) {
     this.confirmDialog.style.display = "none";
-    const answer = approved ? "Yes" : "No";
-    this.audio.speak(`Confirmed ${answer}.`, "P2");
+    const answer = approved ? "yes" : "no";
+    this.wsClient.sendMessage({
+      type: "response",
+      confirm_id: this.activeConfirmId || "confirm_read",
+      answer: answer,
+    });
+    this.audio.speak(`Confirmed ${approved ? "Yes" : "No"}.`, "P2");
     this.activeConfirmId = null;
   }
 

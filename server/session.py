@@ -5,7 +5,11 @@ Maintains active client WebSocket sessions and their dedicated single-frame buff
 import asyncio
 from typing import Dict, Optional
 from fastapi import WebSocket
-from server.models import FrameMessage
+from agent.state import BeliefState
+from agent.trace import TraceLogger
+from server.models import CommandMessage, FrameMessage, UserResponse
+from server.storage import get_trace_repo
+from vision.pipeline import VisionPipeline
 
 
 class Session:
@@ -18,6 +22,10 @@ class Session:
         self.frame_buffer: asyncio.Queue[FrameMessage] = asyncio.Queue(maxsize=1)
         self.last_seq: int = -1
         self.is_active: bool = True
+        # End-to-End Perception, Agent State, and Audit Logging
+        self.pipeline: VisionPipeline = VisionPipeline()
+        self.state: BeliefState = BeliefState(mode="walk")
+        self.trace_logger: TraceLogger = TraceLogger(get_trace_repo())
 
     async def put_frame(self, frame: FrameMessage) -> None:
         """Enforces latest-frame-wins: drops stale frame if queue is full, then puts new frame."""
@@ -28,6 +36,26 @@ class Session:
                 pass
         await self.frame_buffer.put(frame)
         self.last_seq = frame.seq
+
+    def handle_command(self, cmd: CommandMessage) -> None:
+        """Processes client control command."""
+        if cmd.command in ("walk", "read", "describe"):
+            self.state.mode = cmd.command
+            if cmd.command == "describe":
+                self.state.force_detector = True
+        elif cmd.command == "stop":
+            self.state.mode = "walk"
+            self.state.active_reframe = None
+            self.state.pending_confirmation = None
+
+    def handle_response(self, resp: UserResponse) -> None:
+        """Processes client active perception user confirmation response."""
+        if resp.answer == "yes":
+            self.state.approved_read = True
+            self.state.pending_confirmation = None
+        else:
+            self.state.approved_read = False
+            self.state.pending_confirmation = None
 
 
 class SessionManager:

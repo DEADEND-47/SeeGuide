@@ -13,9 +13,9 @@
 
 ## Development Status
 
-- **Current Stage:** **Stage 6 of 10** — *Frontend PWA and User Experience*
-- **Stage Goal:** Implement the accessible mobile Progressive Web App (PWA) client with semantic markup (`web/index.html`), high-contrast 48px touch target styles (`web/style.css`), ES6 client application (`web/app.js`), PWA manifest (`web/manifest.json`), priority TTS audio interrupt, haptics, screen wake lock, evaluation demo mode, and FastAPI static file serving.
-- **Stages 1–5 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, mock storage, OpenCV 5 vision pipeline, and deterministic agent engine are preserved and tested.
+- **Current Stage:** **Stage 7 of 10** — *End-to-End Integration and Live Perception Loop*
+- **Stage Goal:** Wire the WebSocket telemetry handler, OpenCV 5 tiered vision pipeline, deterministic agent policy engine, trace persistence repository, and frontend PWA into a continuous, real-time perception-decision-action loop. Enforce state-driven tier gating (`needs_detector`, `needs_ocr`), active perception human confirmation dialogues, and latest-frame-wins latency policy.
+- **Stages 1–6 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, mock storage, OpenCV 5 vision pipeline, deterministic agent engine, and accessible frontend PWA are preserved and fully tested.
 
 ---
 

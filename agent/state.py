@@ -21,7 +21,25 @@ class BeliefState:
         self.hazard_cooldowns: Dict[str, float] = {}
         self.active_reframe: Optional[Dict[str, Any]] = None
         self.pending_confirmation: Optional[Dict[str, Any]] = None
+        self.approved_read: bool = False
+        self.force_detector: bool = False
         self.cycle_count: int = 0
+
+    def needs_detector(self) -> bool:
+        """Determines if the heavy object detector tier should run in this cycle."""
+        if self.force_detector:
+            self.force_detector = False
+            return True
+        if self.mode == "describe":
+            return True
+        if self.mode == "walk":
+            # Run on cycle 0 and periodically every 5 cycles to conserve CPU
+            return (self.cycle_count % 5) == 0
+        return False
+
+    def needs_ocr(self) -> bool:
+        """Determines if the heavy scene text OCR tier should run in this cycle."""
+        return self.mode == "read"
 
     def is_hazard_in_cooldown(self, hazard_key: str, current_time: float) -> bool:
         """Checks if a hazard key is currently suppressed by an active cooldown."""
@@ -58,6 +76,9 @@ class BeliefState:
             for obj in observation.objects:
                 obj_key = f"{obj.cls}_{obj.zone}"
                 self.announced_objects[obj_key] = t
+
+            if action.reason == "read_text":
+                self.approved_read = False
 
             if action.priority == "P0":
                 # Set hazard cooldown for 3 seconds to avoid auditory spamming

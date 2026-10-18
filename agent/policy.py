@@ -98,7 +98,7 @@ def decide(observation: VisionObservation, state: BeliefState) -> AgentAction:
         # High confidence text reading: check length for human approval
         clean_text = raw_text.replace("[CLIPPED]", "").strip()
         word_count = len(clean_text.split())
-        if word_count > 6 or len(clean_text) > 30:
+        if (word_count > 6 or len(clean_text) > 30) and not getattr(state, "approved_read", False):
             return ask_confirmation(
                 prompt="Read the text aloud?",
                 context="read_mode",

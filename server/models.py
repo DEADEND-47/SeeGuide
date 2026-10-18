@@ -5,6 +5,7 @@ Strictly implements the data contracts defined in Stage 1:
 - AgentAction (agent directive sent to client device)
 """
 
+import json
 from typing import List, Literal, Optional, Tuple, Union
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -127,3 +128,46 @@ class AgentAction(StrictBaseModel):
     def from_json_str(cls, raw: Union[str, bytes]) -> "AgentAction":
         """Deserialize and validate raw JSON into an AgentAction."""
         return cls.model_validate_json(raw)
+
+
+# ====================================================================
+# 4. Client-to-Server Control and Response Messages
+# ====================================================================
+
+class CommandMessage(StrictBaseModel):
+    """Client command to change operating mode or request an action."""
+
+    type: Literal["command"] = "command"
+    command: Literal["walk", "read", "describe", "stop"] = Field(
+        ..., description="Operating mode change or immediate action request"
+    )
+
+
+class UserResponse(StrictBaseModel):
+    """Client response message to active perception confirmation dialogs."""
+
+    type: Literal["response"] = "response"
+    confirm_id: str = Field(..., description="Correlation ID matching the confirmation prompt")
+    answer: Literal["yes", "no"] = Field(..., description="User binary confirmation answer")
+
+
+ClientMessage = Union[FrameMessage, CommandMessage, UserResponse]
+
+
+def parse_client_message(raw: Union[str, bytes]) -> ClientMessage:
+    """Parses and validates raw client WebSocket JSON into the appropriate client message model."""
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf-8")
+    data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError("Client message payload must be a JSON object")
+
+    msg_type = data.get("type", "frame")
+    if msg_type == "frame":
+        return FrameMessage.model_validate(data)
+    elif msg_type == "command":
+        return CommandMessage.model_validate(data)
+    elif msg_type == "response":
+        return UserResponse.model_validate(data)
+    else:
+        raise ValueError(f"Unknown client message type: {msg_type}")
