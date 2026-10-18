@@ -1,6 +1,7 @@
-# SeeGuide Stage 3 Pinned Dependencies
-# Core Vision Pipeline (OpenCV 5 Headless)
+# SeeGuide Stage 4 Pinned Dependencies
+# Core Vision Pipeline (OpenCV 5 Headless & NumPy)
 opencv-python-headless==5.0.0.93
+numpy==2.4.3
 
 # Web Server & Real-time WebSockets
 fastapi==0.136.1

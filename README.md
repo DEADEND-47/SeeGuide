@@ -13,9 +13,9 @@
 
 ## Development Status
 
-- **Current Stage:** **Stage 3 of 10** — *Contracts, Configuration, Backend Foundations, and Storage Abstractions*
-- **Stage Goal:** Implement strict Pydantic v2 data models matching Stage 1 contracts, environment-based configuration (`pydantic-settings`), local mock storage adapters (Traces & Objects), WebSocket connection handler with single-slot "latest-frame-wins" queue buffer, and comprehensive unit tests.
-- **Stages 1 & 2 Status:** Complete. All contracts, JSON schemas, examples, documentation, OpenCV 5.0.0 headless setup, and directory skeleton are preserved.
+- **Current Stage:** **Stage 4 of 10** — *Core Vision Pipeline*
+- **Stage Goal:** Implement modular OpenCV 5 computer vision processing (fast-tier blur/luma/motion/edge density, ONNX YOLOX-nano detector wrapper with dummy fallback, IoU obstacle tracker with looming growth calculation, corridor hazard estimator, DB/CRNN scene text OCR wrapper, YuNet face blur privacy filter, and `VisionPipeline` orchestrator producing `VisionObservation` Pydantic models).
+- **Stages 1–3 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, and mock storage are preserved and tested.
 
 ---
 
