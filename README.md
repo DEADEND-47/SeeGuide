@@ -13,9 +13,9 @@
 
 ## Development Status
 
-- **Current Stage:** **Stage 2 of 10** — *Project Foundation, Environment Configuration, Dependencies, and Core Repository Structure*
-- **Stage Goal:** Establish reproducible environment configuration (Python 3.11+, pinned OpenCV 5 headless `opencv-python-headless==5.0.0.93`, FastAPI, WebSockets, Pytest), cross-platform automation tooling (`Makefile`, shell & PowerShell scripts), environment verification, and clean package skeletons.
-- **Stage 1 Status:** Complete. All contracts, JSON schemas, examples, and documentation are preserved.
+- **Current Stage:** **Stage 3 of 10** — *Contracts, Configuration, Backend Foundations, and Storage Abstractions*
+- **Stage Goal:** Implement strict Pydantic v2 data models matching Stage 1 contracts, environment-based configuration (`pydantic-settings`), local mock storage adapters (Traces & Objects), WebSocket connection handler with single-slot "latest-frame-wins" queue buffer, and comprehensive unit tests.
+- **Stages 1 & 2 Status:** Complete. All contracts, JSON schemas, examples, documentation, OpenCV 5.0.0 headless setup, and directory skeleton are preserved.
 
 ---
 

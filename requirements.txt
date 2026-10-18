@@ -1,4 +1,4 @@
-# SeeGuide Stage 2 Pinned Dependencies
+# SeeGuide Stage 3 Pinned Dependencies
 # Core Vision Pipeline (OpenCV 5 Headless)
 opencv-python-headless==5.0.0.93
 
@@ -9,6 +9,7 @@ websockets==16.1.1
 
 # Data Contracts, Schema Validation & Environment
 pydantic==2.13.3
+pydantic-settings==2.14.2
 python-dotenv==1.2.2
 
 # AWS Storage & Telemetry (DynamoDB & S3)

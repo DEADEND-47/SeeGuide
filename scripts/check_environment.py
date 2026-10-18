@@ -76,8 +76,8 @@ def main() -> int:
         print(f"    [FAIL] {err}")
         failures.append(err)
 
-    # 6. Optional runtime checks (boto3, uvicorn, pytest)
-    for pkg_name in ["uvicorn", "boto3", "pytest", "dotenv"]:
+    # 6. Optional and foundation checks (boto3, uvicorn, pytest, pydantic_settings)
+    for pkg_name in ["uvicorn", "boto3", "pytest", "dotenv", "pydantic_settings"]:
         try:
             mod = __import__(pkg_name)
             ver = getattr(mod, "__version__", "installed")
