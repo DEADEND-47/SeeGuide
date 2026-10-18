@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="SeeGuide - Privacy-first phone-camera assistant for blind and low-vision pedestrians">
+  <title>SeeGuide Assistant</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <header role="banner">
+    <h1>SeeGuide</h1>
+    <div id="connection-status" class="status-badge disconnected" role="status" aria-live="polite">
+      Connecting to server...
+    </div>
+  </header>
+
+  <main role="main">
+
+    <!-- Active Agent Speech & Auditory Feedback Region -->
+    <section class="feedback-container" id="feedback-panel" aria-labelledby="feedback-heading">
+      <h2 id="feedback-heading" class="feedback-label">Agent Feedback</h2>
+      <div id="status-text" class="feedback-text" role="status" aria-live="assertive">
+        Ready. Starting camera...
+      </div>
+    </section>
+
+    <!-- Human-in-the-Loop Confirmation Dialog (Hidden until triggered) -->
+    <section id="confirmation-dialog" class="confirmation-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="confirm-prompt">
+      <div id="confirm-prompt" class="confirmation-prompt">Confirmation required</div>
+      <div class="confirmation-actions">
+        <button id="btn-confirm-yes" class="btn-confirm btn-yes" aria-label="Confirm yes">Yes</button>
+        <button id="btn-confirm-no" class="btn-confirm btn-no" aria-label="Confirm no">No</button>
+      </div>
+    </section>
+
+    <!-- Primary Operating Modes -->
+    <section class="modes-grid" role="region" aria-label="Operating Modes">
+      <button id="btn-mode-walk" class="btn-mode active" aria-pressed="true">
+        Walk Mode (Hazards)
+      </button>
+
+      <button id="btn-mode-read" class="btn-mode" aria-pressed="false">
+        Read Mode (Text & Signs)
+      </button>
+
+      <button id="btn-mode-describe" class="btn-mode describe" aria-label="Describe current scene on demand">
+        Describe Scene
+      </button>
+    </section>
+
+    <!-- Hidden Video & Canvas for Capture -->
+    <div class="sr-only" aria-hidden="true">
+      <video id="camera-feed" playsinline autoplay muted width="640" height="480"></video>
+      <canvas id="capture-canvas" width="640" height="480"></canvas>
+    </div>
+
+    <!-- Controls & Demo Evaluation Mode -->
+    <footer class="bottom-controls" role="contentinfo">
+      <div class="demo-toggle-container">
+        <label for="demo-switch" id="demo-label">Demo Video Mode</label>
+        <label class="switch">
+          <input type="checkbox" id="demo-switch" aria-labelledby="demo-label">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div id="demo-upload-wrapper" style="display: none;">
+        <input type="file" id="video-file-input" accept="video/*" class="sr-only" aria-label="Select evaluation video file">
+        <button id="btn-select-video" class="btn-upload" style="width: 100%;">
+          Upload Video for Evaluation
+        </button>
+      </div>
+    </footer>
+
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

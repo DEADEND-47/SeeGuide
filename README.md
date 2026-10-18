@@ -13,9 +13,9 @@
 
 ## Development Status
 
-- **Current Stage:** **Stage 5 of 10** — *Agent Runtime and Policy Engine*
-- **Stage Goal:** Implement the deterministic, rule-based agent decision engine (`BeliefState` tracking, tool registry factory functions, 6-rule priority policy arbiter, and `TraceLogger` telemetry recorder integration).
-- **Stages 1–4 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, mock storage, and OpenCV 5 vision pipeline are preserved and tested.
+- **Current Stage:** **Stage 6 of 10** — *Frontend PWA and User Experience*
+- **Stage Goal:** Implement the accessible mobile Progressive Web App (PWA) client with semantic markup (`web/index.html`), high-contrast 48px touch target styles (`web/style.css`), ES6 client application (`web/app.js`), PWA manifest (`web/manifest.json`), priority TTS audio interrupt, haptics, screen wake lock, evaluation demo mode, and FastAPI static file serving.
+- **Stages 1–5 Status:** Complete. Contracts, schemas, examples, documentation, environment verification, WebSocket handling, latest-frame-wins buffer, mock storage, OpenCV 5 vision pipeline, and deterministic agent engine are preserved and tested.
 
 ---
 

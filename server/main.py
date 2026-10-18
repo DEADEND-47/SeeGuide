@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, WebSocket
+from fastapi.staticfiles import StaticFiles
 from server.config import get_settings
 from server.websocket_handler import handle_websocket
 
@@ -31,7 +32,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SeeGuide Assistant API",
     description="Privacy-first phone-camera assistant for blind and low-vision users (OpenCV AI Competition 2026)",
-    version="0.3.0",
+    version="0.6.0",
     lifespan=lifespan,
 )
 
@@ -51,3 +52,7 @@ async def health_check():
 async def websocket_telemetry_endpoint(websocket: WebSocket, session_id: str):
     """Bidirectional WebSocket endpoint for video telemetry and agent action directives."""
     await handle_websocket(websocket=websocket, session_id=session_id)
+
+
+# Mount frontend PWA static files (after API routes so endpoints take precedence)
+app.mount("/", StaticFiles(directory="web", html=True), name="web")

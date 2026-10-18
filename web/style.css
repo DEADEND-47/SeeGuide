@@ -1,0 +1,300 @@
+/* SeeGuide Accessible Mobile PWA Stylesheet
+   Prioritizes high-contrast dark theme, large touch targets (min 48px),
+   and prominent visual focus indicators for low-vision users.
+*/
+
+:root {
+  --bg-color: #0a0a0a;
+  --surface-color: #1a1a1a;
+  --text-main: #ffffff;
+  --text-muted: #b3b3b3;
+  --accent-yellow: #ffe500;
+  --accent-blue: #29b6f6;
+  --alert-red: #ff3333;
+  --success-green: #00e676;
+  --focus-ring: #ffe500;
+  --border-radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+header {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent-yellow);
+  letter-spacing: 0.5px;
+}
+
+.status-badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: var(--surface-color);
+  color: var(--text-muted);
+  border: 1px solid #333333;
+}
+
+.status-badge.connected {
+  background: #003314;
+  color: var(--success-green);
+  border-color: var(--success-green);
+}
+
+.status-badge.disconnected {
+  background: #330000;
+  color: var(--alert-red);
+  border-color: var(--alert-red);
+}
+
+/* Screen-reader utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Live Speech/Feedback Region */
+.feedback-container {
+  background: var(--surface-color);
+  border: 2px solid #333333;
+  border-radius: var(--border-radius);
+  padding: 18px;
+  margin-bottom: 20px;
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.feedback-container.hazard {
+  background: #3d0000;
+  border-color: var(--alert-red);
+  animation: pulse-border 1s infinite alternate;
+}
+
+@keyframes pulse-border {
+  from { border-color: var(--alert-red); }
+  to { border-color: #ffffff; }
+}
+
+.feedback-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.feedback-text {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-main);
+  word-wrap: break-word;
+}
+
+/* Mode Selection Buttons */
+.modes-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-grow: 1;
+}
+
+.btn-mode {
+  min-height: 64px;
+  padding: 16px;
+  border-radius: var(--border-radius);
+  font-size: 1.25rem;
+  font-weight: 800;
+  border: 3px solid transparent;
+  background: var(--surface-color);
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  touch-action: manipulation;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-mode:active {
+  transform: scale(0.98);
+}
+
+.btn-mode.active {
+  background: var(--accent-yellow);
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.btn-mode.describe {
+  background: #112d4e;
+  border-color: var(--accent-blue);
+  color: #ffffff;
+}
+
+.btn-mode.describe:active {
+  background: var(--accent-blue);
+  color: #000000;
+}
+
+/* Confirmation Dialog */
+.confirmation-dialog {
+  background: #2a2200;
+  border: 3px solid var(--accent-yellow);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.confirmation-prompt {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.confirmation-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-confirm {
+  min-height: 54px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-yes {
+  background: var(--success-green);
+  color: #000000;
+}
+
+.btn-no {
+  background: #444444;
+  color: #ffffff;
+}
+
+/* Controls & Demo Mode */
+.bottom-controls {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #222222;
+}
+
+.demo-toggle-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface-color);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 32px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #444444;
+  transition: 0.2s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 24px;
+  width: 24px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-yellow);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+  background-color: #000000;
+}
+
+.btn-upload {
+  min-height: 48px;
+  padding: 10px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+  background: #262626;
+  color: var(--accent-yellow);
+  border: 1px dashed var(--accent-yellow);
+  cursor: pointer;
+}
+
+/* Keyboard and Screen-Reader Accessible Focus Styles */
+button:focus-visible,
+input:focus-visible,
+.btn-upload:focus-visible,
+.switch input:focus-visible + .slider {
+  outline: 4px solid var(--focus-ring);
+  outline-offset: 3px;
+}
