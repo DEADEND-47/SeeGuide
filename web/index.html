@@ -3,106 +3,262 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#000000">
-  <meta name="description" content="SeeGuide - Privacy-first phone-camera assistant for blind and low-vision pedestrians">
-  <title>SeeGuide Assistant</title>
+  <meta name="theme-color" content="#090d16">
+  <meta name="description" content="SeeGuide - Privacy-First AI Phone Camera Assistant for Blind and Low-Vision Pedestrians">
+  <title>SeeGuide AI • Vision Assistant</title>
   <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
-  <header role="banner">
-    <h1>SeeGuide</h1>
-    <div id="connection-status" class="status-badge disconnected" role="status" aria-live="polite">
-      Connecting to server...
-    </div>
-  </header>
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow glow-top" aria-hidden="true"></div>
+  <div class="ambient-glow glow-bottom" aria-hidden="true"></div>
 
-  <main id="main-content" role="main">
+  <div class="app-shell">
 
-    <!-- Active Agent Speech & Auditory Feedback Region -->
-    <section class="feedback-container" id="feedback-panel" aria-labelledby="feedback-heading">
-      <h2 id="feedback-heading" class="feedback-label">Agent Feedback</h2>
-      <!-- High-priority hazard alert region for immediate assistive tech announcement -->
-      <div id="hazard-alert" role="alert" aria-live="assertive" class="sr-only"></div>
-      <div id="status-text" class="feedback-text" role="status" aria-live="polite">
-        Ready. Starting camera...
-      </div>
-    </section>
-
-    <!-- Camera Control Bar -->
-    <div class="camera-control-bar">
-      <button id="btn-camera-toggle" class="btn-camera" aria-label="Stop camera stream">
-        Stop Camera
-      </button>
-    </div>
-
-    <!-- Human-in-the-Loop Confirmation Dialog (Hidden until triggered) -->
-    <div id="confirmation-dialog" class="confirmation-dialog" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="confirm-prompt" aria-describedby="confirm-desc">
-      <div id="confirm-prompt" class="confirmation-prompt">Confirmation required</div>
-      <p id="confirm-desc" class="sr-only">Choose Yes to proceed with spoken text, or No to dismiss.</p>
-      <div class="confirmation-actions">
-        <button id="btn-confirm-yes" class="btn-confirm btn-yes" aria-label="Confirm yes">Yes</button>
-        <button id="btn-confirm-no" class="btn-confirm btn-no" aria-label="Confirm no">No</button>
-      </div>
-    </div>
-
-    <!-- Primary Operating Modes -->
-    <section class="modes-grid" role="region" aria-label="Operating Modes">
-      <button id="btn-mode-walk" class="btn-mode active" aria-pressed="true">
-        Walk Mode (Hazards)
-      </button>
-
-      <button id="btn-mode-read" class="btn-mode" aria-pressed="false">
-        Read Mode (Text & Signs)
-      </button>
-
-      <button id="btn-mode-describe" class="btn-mode describe" aria-label="Describe current scene on demand">
-        Describe Scene
-      </button>
-    </section>
-
-    <!-- Hidden Video & Canvas for Capture -->
-    <div class="sr-only" aria-hidden="true">
-      <video id="camera-feed" playsinline autoplay muted width="640" height="480"></video>
-      <canvas id="capture-canvas" width="640" height="480"></canvas>
-    </div>
-
-    <!-- Agent Trace Timeline Viewer (FR-13 & Section 6/8) -->
-    <section class="trace-viewer-section" id="trace-viewer-panel" aria-labelledby="trace-heading">
-      <div class="trace-header">
-        <h2 id="trace-heading" class="trace-label">Agent Decisions & Trace Timeline</h2>
-        <div class="trace-controls">
-          <button id="btn-refresh-traces" class="btn-trace" aria-label="Refresh trace records">Refresh</button>
-          <button id="btn-export-traces" class="btn-trace" aria-label="Export session trace JSON">Export JSON</button>
-          <button id="btn-delete-session" class="btn-trace btn-danger" aria-label="Delete my session data">Delete Session</button>
+    <!-- Top Navigation Header -->
+    <header role="banner" class="top-nav">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">SeeGuide</h1>
+          <span class="brand-badge">Agentic Vision 2026</span>
         </div>
       </div>
-      <div id="trace-list" class="trace-list" role="log" aria-live="polite" aria-atomic="false">
-        <div class="trace-placeholder">No trace events recorded yet. Connect and stream frames to view agent telemetry.</div>
-      </div>
-    </section>
 
-    <!-- Controls & Demo Evaluation Mode -->
-    <footer class="bottom-controls" role="contentinfo">
-      <div class="demo-toggle-container">
-        <label for="demo-switch" id="demo-label">Demo Video Mode</label>
-        <label class="switch">
-          <input type="checkbox" id="demo-switch" aria-labelledby="demo-label">
-          <span class="slider"></span>
-        </label>
+      <div class="header-right">
+        <div id="connection-status" class="status-pill disconnected" role="status" aria-live="polite">
+          <span class="status-dot"></span>
+          <span class="status-label">Connecting</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" role="main" class="main-layout">
+
+      <!-- Live Viewport & Perception Card -->
+      <section class="card viewport-card" aria-label="Camera Viewport & Perception Feed">
+        <div class="viewport-header">
+          <div class="viewport-title">
+            <span class="live-indicator"><span class="pulse-ring"></span>LIVE FEED</span>
+            <span id="active-mode-label" class="mode-tag">Walk Mode</span>
+          </div>
+          <div class="viewport-actions">
+            <button id="btn-camera-toggle" class="btn-icon" aria-label="Pause or resume camera stream" title="Toggle Camera">
+              <svg id="icon-cam-active" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+              <span id="camera-btn-text">Pause Camera</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Video Preview Container with HUD Overlay -->
+        <div class="camera-stage">
+          <video id="camera-feed" playsinline autoplay muted width="640" height="480" class="video-preview"></video>
+          <canvas id="capture-canvas" width="640" height="480" class="sr-only" aria-hidden="true"></canvas>
+
+          <!-- Dynamic HUD Reticle & Corridor Guides -->
+          <div class="hud-overlay" aria-hidden="true">
+            <div class="hud-corridor">
+              <div class="corridor-line left"></div>
+              <div class="corridor-line right"></div>
+            </div>
+            <div class="hud-reticle"></div>
+            <div class="hud-corner tl"></div>
+            <div class="hud-corner tr"></div>
+            <div class="hud-corner bl"></div>
+            <div class="hud-corner br"></div>
+            <div id="hud-metrics" class="hud-telemetry">
+              <span>LATENCY: <strong id="hud-latency">-- ms</strong></span>
+              <span>QUALITY: <strong id="hud-quality">STABLE</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Agent Feedback Panel (Auditory & Visual Anchor) -->
+        <div class="feedback-card" id="feedback-panel" role="region" aria-labelledby="feedback-heading">
+          <div class="feedback-header">
+            <div class="agent-avatar" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" x2="12" y1="19" y2="22"/>
+              </svg>
+            </div>
+            <h2 id="feedback-heading" class="feedback-title">Agent Perception Feedback</h2>
+            <span id="action-priority-tag" class="priority-pill p3">P3 Ambient</span>
+          </div>
+
+          <div id="hazard-alert" role="alert" aria-live="assertive" class="sr-only"></div>
+          
+          <div class="feedback-body">
+            <p id="status-text" class="status-announcement" role="status" aria-live="polite">
+              Ready. Camera stream active and scanning walking corridor...
+            </p>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Human-in-the-Loop Confirmation Dialog Modal -->
+      <div id="confirmation-dialog" class="dialog-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="confirm-prompt" aria-describedby="confirm-desc">
+        <div class="dialog-card">
+          <div class="dialog-icon-wrapper" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffe500" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+          </div>
+          <h3 id="confirm-prompt" class="dialog-title">Human Confirmation Required</h3>
+          <p id="confirm-desc" class="dialog-desc">The assistant detected lengthy signage. Would you like it read aloud?</p>
+          <div class="dialog-actions">
+            <button id="btn-confirm-yes" class="btn btn-primary" aria-label="Confirm yes, read text">Read Aloud</button>
+            <button id="btn-confirm-no" class="btn btn-secondary" aria-label="Confirm no, dismiss">Dismiss</button>
+          </div>
+        </div>
       </div>
 
-      <div id="demo-upload-wrapper" style="display: none;">
-        <input type="file" id="video-file-input" accept="video/*" class="sr-only" aria-label="Select evaluation video file">
-        <button id="btn-select-video" class="btn-upload" style="width: 100%;">
-          Upload Video for Evaluation
-        </button>
-      </div>
-    </footer>
+      <!-- Action Mode Selector Grid -->
+      <section class="modes-panel" role="region" aria-label="Assistant Modes">
+        <h2 class="section-label">Assistive Operating Modes</h2>
+        <div class="modes-grid">
+          
+          <button id="btn-mode-walk" class="mode-card active" aria-pressed="true">
+            <div class="mode-card-icon walk" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="5" r="2"/>
+                <path d="m9 20 3-6 3 6"/>
+                <path d="m6 8 6 2 6-2"/>
+                <path d="M12 10v4"/>
+              </svg>
+            </div>
+            <div class="mode-card-content">
+              <div class="mode-name">Walk Mode</div>
+              <div class="mode-sub">Corridor hazards & looming</div>
+            </div>
+          </button>
 
-  </main>
+          <button id="btn-mode-read" class="mode-card" aria-pressed="false">
+            <div class="mode-card-icon read" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+                <path d="M6 6h10"/>
+                <path d="M6 10h10"/>
+              </svg>
+            </div>
+            <div class="mode-card-content">
+              <div class="mode-name">Read Mode</div>
+              <div class="mode-sub">Signs, doors & labels</div>
+            </div>
+          </button>
+
+          <button id="btn-mode-describe" class="mode-card describe" aria-label="Describe current scene on demand">
+            <div class="mode-card-icon describe-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 16v-4"/>
+                <path d="M12 8h.01"/>
+              </svg>
+            </div>
+            <div class="mode-card-content">
+              <div class="mode-name">Describe</div>
+              <div class="mode-sub">On-demand scene summary</div>
+            </div>
+          </button>
+
+        </div>
+      </section>
+
+      <!-- Agent Trace Timeline & Observability Panel (FR-13 & Section 6) -->
+      <section class="card trace-card" id="trace-viewer-panel" aria-labelledby="trace-heading">
+        <div class="trace-header">
+          <div class="trace-title-group">
+            <h2 id="trace-heading" class="trace-title">Decision Audit & Trace Stream</h2>
+            <span class="trace-counter" id="trace-count-pill">0 events</span>
+          </div>
+          <div class="trace-controls">
+            <button id="btn-refresh-traces" class="btn-chip" aria-label="Refresh telemetry traces">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                <path d="M8 16H3v5"/>
+              </svg>
+              Refresh
+            </button>
+            <button id="btn-export-traces" class="btn-chip" aria-label="Export session trace JSON">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Export JSON
+            </button>
+            <button id="btn-delete-session" class="btn-chip btn-danger" aria-label="Delete my session data">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+              </svg>
+              Purge
+            </button>
+          </div>
+        </div>
+
+        <div id="trace-list" class="trace-timeline" role="log" aria-live="polite" aria-atomic="false">
+          <div class="trace-placeholder">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>Waiting for active telemetry frames. Connect and stream camera to inspect decision loop.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Demo Video Mode & Judge Tools (Section 10) -->
+      <footer class="card demo-card" role="contentinfo">
+        <div class="demo-card-header">
+          <div class="demo-info">
+            <h3 class="demo-title">Judge Evaluation: Demo Video Mode</h3>
+            <p class="demo-desc">Test multi-condition clips without requiring a live mobile camera.</p>
+          </div>
+          <div class="toggle-wrapper">
+            <label class="modern-switch">
+              <input type="checkbox" id="demo-switch" aria-label="Toggle Demo Video Mode">
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div id="demo-upload-wrapper" class="demo-upload-zone" style="display: none;">
+          <input type="file" id="video-file-input" accept="video/*" class="sr-only" aria-label="Select evaluation video file">
+          <button id="btn-select-video" class="btn-upload">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Choose Benchmark MP4 Clip
+          </button>
+        </div>
+      </footer>
+
+    </main>
+  </div>
 
   <script src="/app.js"></script>
 </body>

@@ -300,9 +300,18 @@ class App {
     this.canvasEl = document.getElementById("capture-canvas");
 
     this.traceListEl = document.getElementById("trace-list");
+    this.traceCountPill = document.getElementById("trace-count-pill");
     this.btnRefreshTraces = document.getElementById("btn-refresh-traces");
     this.btnExportTraces = document.getElementById("btn-export-traces");
     this.btnDeleteSession = document.getElementById("btn-delete-session");
+
+    this.activeModeLabel = document.getElementById("active-mode-label");
+    this.cameraBtnText = document.getElementById("camera-btn-text");
+    this.actionPriorityTag = document.getElementById("action-priority-tag");
+    this.hudLatency = document.getElementById("hud-latency");
+    this.hudQuality = document.getElementById("hud-quality");
+
+    this.totalEventCount = 0;
 
     this.activeConfirmId = null;
     this.isCameraRunning = true;
@@ -333,7 +342,7 @@ class App {
     if (!cameraStarted) {
       this.isCameraRunning = false;
       if (this.btnCameraToggle) {
-        this.btnCameraToggle.textContent = "Start Camera";
+        if (this.cameraBtnText) this.cameraBtnText.textContent = "Start Camera";
         this.btnCameraToggle.classList.add("stopped");
       }
       this.updateStatus("Camera unavailable. Toggle Demo Mode to test video.", "P2");
@@ -414,15 +423,15 @@ class App {
     if (this.isCameraRunning) {
       this.camera.stopCamera();
       this.isCameraRunning = false;
-      this.btnCameraToggle.textContent = "Start Camera";
+      if (this.cameraBtnText) this.cameraBtnText.textContent = "Start Camera";
       this.btnCameraToggle.classList.add("stopped");
-      this.updateStatus("Camera stopped. Tap Start Camera to resume.", "P2");
+      this.updateStatus("Camera paused. Tap to resume monitoring.", "P2");
       this.audio.speak("Camera stopped.", "P2");
     } else {
       const started = await this.camera.startCamera();
       if (started) {
         this.isCameraRunning = true;
-        this.btnCameraToggle.textContent = "Stop Camera";
+        if (this.cameraBtnText) this.cameraBtnText.textContent = "Pause Camera";
         this.btnCameraToggle.classList.remove("stopped");
         this.updateStatus("Camera started. Monitoring walking corridor.", "P2");
         this.audio.speak("Camera started.", "P2");
@@ -453,6 +462,7 @@ class App {
       this.btnWalk.setAttribute("aria-pressed", "true");
       this.btnRead.classList.remove("active");
       this.btnRead.setAttribute("aria-pressed", "false");
+      if (this.activeModeLabel) this.activeModeLabel.textContent = "Walk Mode";
       this.updateStatus("Switched to Walk Mode. Monitoring for obstacles.", "P2");
       this.audio.speak("Walk mode.", "P2");
     } else if (mode === "read") {
@@ -460,6 +470,7 @@ class App {
       this.btnRead.setAttribute("aria-pressed", "true");
       this.btnWalk.classList.remove("active");
       this.btnWalk.setAttribute("aria-pressed", "false");
+      if (this.activeModeLabel) this.activeModeLabel.textContent = "Read Mode";
       this.updateStatus("Switched to Read Mode. Point camera at signage or text.", "P2");
       this.audio.speak("Read mode.", "P2");
     }
@@ -497,6 +508,13 @@ class App {
 
   handleAgentAction(action) {
     if (!action) return;
+
+    // Update Priority Pill in Header
+    if (this.actionPriorityTag && action.priority) {
+      const p = action.priority.toUpperCase();
+      this.actionPriorityTag.textContent = `${p} ${action.type || "Action"}`;
+      this.actionPriorityTag.className = `priority-pill ${p.toLowerCase()}`;
+    }
 
     // Append to live trace viewer UI
     this.appendLiveTrace(action);
@@ -565,12 +583,17 @@ class App {
     if (placeholder) {
       placeholder.remove();
     }
+    this.totalEventCount++;
+    if (this.traceCountPill) {
+      this.traceCountPill.textContent = `${this.totalEventCount} events`;
+    }
+
     const item = document.createElement("div");
     const pClass = (action.priority || "").toLowerCase();
     item.className = `trace-item ${pClass}`;
     const timeStr = new Date().toLocaleTimeString();
     const actionDesc = action.type === "stay_silent" ? `silent (${action.reason || "nominal"})` : `${action.type}: "${action.text || ""}"`;
-    item.textContent = `[${timeStr}] [${action.priority || "P3"}] [${action.mode || "walk"}] ${actionDesc}`;
+    item.innerHTML = `<span style="opacity: 0.6; font-size: 0.7rem;">[${timeStr}] [${action.priority || "P3"}] [${action.mode || "walk"}]</span><strong>${actionDesc}</strong>`;
     this.traceListEl.prepend(item);
     // Keep max 30 items in live timeline
     while (this.traceListEl.children.length > 30) {
