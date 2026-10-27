@@ -50,6 +50,12 @@ logs/
 models/
 eval/clips/raw/
 
+# Local mock persistence data
+data/traces/*.json
+!data/traces/.gitkeep
+data/objects/*
+!data/objects/.gitkeep
+
 # OS / Editor Artifacts
 .DS_Store
 Thumbs.db
