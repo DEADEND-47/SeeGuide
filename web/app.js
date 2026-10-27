@@ -638,15 +638,28 @@ class App {
   triggerDescribe() {
     this.updateStatus("Requesting scene description...", "P2");
     this.audio.speak("Analyzing scene.", "P2");
+    this.btnDescribe.classList.add("active");
     this.wsClient.sendMessage({
       type: "command",
       command: "describe",
     });
     const priorMode = this.session.currentMode;
     this.session.setMode("describe");
+    // Trigger an immediate camera capture to send a frame under describe mode right away
+    if (this.camera && this.camera.video && this.camera.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      try {
+        this.camera.ctx.drawImage(this.camera.video, 0, 0, this.camera.canvas.width, this.camera.canvas.height);
+        const dataUrl = this.camera.canvas.toDataURL("image/jpeg", 0.7);
+        const b64 = dataUrl.split(",")[1];
+        if (b64) {
+          this.dispatchFrame(b64, this.camera.canvas.width, this.camera.canvas.height);
+        }
+      } catch (e) {}
+    }
     setTimeout(() => {
       this.session.setMode(priorMode);
-    }, 1500);
+      this.btnDescribe.classList.remove("active");
+    }, 2500);
   }
 
   dispatchFrame(b64, width, height) {
@@ -704,6 +717,9 @@ class App {
       this.showConfirmation(action.text, action.confirm_id);
     } else if (action.text && action.type !== "stay_silent" && action.type !== "log_event") {
       this.updateStatus(action.text, action.priority);
+    } else if (action.type === "stay_silent") {
+      const modeName = this.session.currentMode.toUpperCase();
+      this.updateStatus(`[${modeName} MODE] Corridor clear. Environment nominal.`, "P3");
     }
   }
 

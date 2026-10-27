@@ -32,6 +32,7 @@ class Session:
             ocr_rec_path=settings.OCR_REC_PATH,
             yunet_model_path=settings.YUNET_MODEL_PATH,
             vocabulary_path=settings.VOCABULARY_PATH,
+            timeout_ms=settings.PIPELINE_TIMEOUT_MS,
         )
         self.state: BeliefState = BeliefState(mode="walk")
         self.trace_logger: TraceLogger = TraceLogger(get_trace_repo())

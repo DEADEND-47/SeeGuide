@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     OCR_REC_PATH: str = "models/text_recognition_CRNN.onnx"
     YUNET_MODEL_PATH: str = "models/face_detection_yunet.onnx"
     VOCABULARY_PATH: str = "models/charset_36_EN.txt"
+    PIPELINE_TIMEOUT_MS: float = 3500.0
 
     model_config = SettingsConfigDict(
         env_file=".env",

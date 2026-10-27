@@ -136,8 +136,28 @@ def decide(observation: VisionObservation, state: BeliefState) -> AgentAction:
             )
 
     # ====================================================================
-    # Rule 5: P3 Ambient Scene Description (Unannounced Objects)
+    # Rule 5: P3 Ambient Scene Description (Unannounced Objects or On-Demand Describe)
     # ====================================================================
+    if state.mode == "describe":
+        if observation.objects:
+            obj_descriptions = []
+            for o in observation.objects:
+                obj_descriptions.append(f"{o.cls} on the {o.zone}")
+            desc_text = "I see: " + ", ".join(obj_descriptions) + "."
+            return speak(
+                text=desc_text,
+                priority="P2",
+                vibrate=False,
+                reason="on_demand_describe",
+            )
+        else:
+            return speak(
+                text="Path appears clear. No major obstacles detected in corridor.",
+                priority="P2",
+                vibrate=False,
+                reason="on_demand_describe_clear",
+            )
+
     unannounced_objects = [
         obj for obj in observation.objects
         if not state.is_object_announced(f"{obj.cls}_{obj.zone}", t)
