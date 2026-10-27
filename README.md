@@ -94,8 +94,8 @@ flowchart TD
 ### 2. Clone and Setup Environment
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/seeguide.git
-cd seeguide
+git clone https://github.com/DEADEND-47/SeeGuide.git
+cd SeeGuide
 
 # Create and activate virtual environment
 python -m venv venv
@@ -156,6 +156,7 @@ SeeGuide loads configuration via `pydantic-settings` with `.env` support. Use `.
 | `OCR_REC_PATH` | `models/text_recognition_CRNN.onnx`| Path to CRNN text recognition ONNX weights. |
 | `YUNET_MODEL_PATH` | `models/face_detection_yunet.onnx`| Path to YuNet face detection ONNX weights for privacy blurring. |
 | `VOCABULARY_PATH` | `models/charset_36_EN.txt` | Path to alphanumeric character vocabulary for CRNN text decoding. |
+| `PIPELINE_TIMEOUT_MS` | `3500.0` | Execution timeout budget for CPU model inference before graceful degradation. |
 
 ---
 
@@ -205,7 +206,7 @@ SeeGuide is engineered to run permanently on the **AWS Free Tier** at **$0.00/mo
 3. **Deploy via Single Command:**
    SSH into the instance and run:
    ```bash
-   git clone https://github.com/your-org/seeguide.git /opt/seeguide
+   git clone https://github.com/DEADEND-47/SeeGuide.git /opt/seeguide
    cd /opt/seeguide
    chmod +x infra/deploy.sh
    sudo ./infra/deploy.sh your-domain.duckdns.org
