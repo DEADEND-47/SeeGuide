@@ -69,6 +69,21 @@
       <canvas id="capture-canvas" width="640" height="480"></canvas>
     </div>
 
+    <!-- Agent Trace Timeline Viewer (FR-13 & Section 6/8) -->
+    <section class="trace-viewer-section" id="trace-viewer-panel" aria-labelledby="trace-heading">
+      <div class="trace-header">
+        <h2 id="trace-heading" class="trace-label">Agent Decisions & Trace Timeline</h2>
+        <div class="trace-controls">
+          <button id="btn-refresh-traces" class="btn-trace" aria-label="Refresh trace records">Refresh</button>
+          <button id="btn-export-traces" class="btn-trace" aria-label="Export session trace JSON">Export JSON</button>
+          <button id="btn-delete-session" class="btn-trace btn-danger" aria-label="Delete my session data">Delete Session</button>
+        </div>
+      </div>
+      <div id="trace-list" class="trace-list" role="log" aria-live="polite" aria-atomic="false">
+        <div class="trace-placeholder">No trace events recorded yet. Connect and stream frames to view agent telemetry.</div>
+      </div>
+    </section>
+
     <!-- Controls & Demo Evaluation Mode -->
     <footer class="bottom-controls" role="contentinfo">
       <div class="demo-toggle-container">

@@ -60,3 +60,24 @@ def test_storage_factories():
 
     object_storage = get_object_storage()
     assert isinstance(object_storage, LocalMockObjectStorage)
+
+
+@pytest.mark.asyncio
+async def test_trace_query_and_delete_session(tmp_path: Path):
+    """Verify TraceRepository get_session_traces and delete_session methods (FR-13 & NFR-6)."""
+    repo = LocalMockTraceRepository(base_dir=str(tmp_path / "traces"))
+    session_id = "test-query-sess"
+
+    # Save multiple traces
+    await repo.save_trace(session_id, {"session_id": session_id, "step": 1, "action": {"type": "speak", "text": "hello"}})
+    await repo.save_trace(session_id, {"session_id": session_id, "step": 2, "action": {"type": "stay_silent"}})
+
+    traces = await repo.get_session_traces(session_id)
+    assert len(traces) == 2
+    assert traces[0]["step"] == 1
+    assert traces[1]["step"] == 2
+
+    # Delete session
+    await repo.delete_session(session_id)
+    remaining_traces = await repo.get_session_traces(session_id)
+    assert len(remaining_traces) == 0

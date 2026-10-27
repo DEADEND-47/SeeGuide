@@ -299,6 +299,11 @@ class App {
     this.videoEl = document.getElementById("camera-feed");
     this.canvasEl = document.getElementById("capture-canvas");
 
+    this.traceListEl = document.getElementById("trace-list");
+    this.btnRefreshTraces = document.getElementById("btn-refresh-traces");
+    this.btnExportTraces = document.getElementById("btn-export-traces");
+    this.btnDeleteSession = document.getElementById("btn-delete-session");
+
     this.activeConfirmId = null;
     this.isCameraRunning = true;
     this.previousFocusedElement = null;
@@ -342,6 +347,16 @@ class App {
 
     if (this.btnCameraToggle) {
       this.btnCameraToggle.addEventListener("click", () => this.toggleCamera());
+    }
+
+    if (this.btnRefreshTraces) {
+      this.btnRefreshTraces.addEventListener("click", () => this.fetchTraces());
+    }
+    if (this.btnExportTraces) {
+      this.btnExportTraces.addEventListener("click", () => this.exportTraces());
+    }
+    if (this.btnDeleteSession) {
+      this.btnDeleteSession.addEventListener("click", () => this.deleteSession());
     }
 
     this.btnConfirmYes.addEventListener("click", () => this.respondConfirmation(true));
@@ -483,6 +498,9 @@ class App {
   handleAgentAction(action) {
     if (!action) return;
 
+    // Append to live trace viewer UI
+    this.appendLiveTrace(action);
+
     // 1. Auditory Feedback (ignore silent and internal log events)
     if (action.text && action.type !== "stay_silent" && action.type !== "log_event") {
       this.audio.speak(action.text, action.priority);
@@ -539,6 +557,87 @@ class App {
 
   updateStatus(message, priority) {
     this.statusText.textContent = message;
+  }
+
+  appendLiveTrace(action) {
+    if (!this.traceListEl) return;
+    const placeholder = this.traceListEl.querySelector(".trace-placeholder");
+    if (placeholder) {
+      placeholder.remove();
+    }
+    const item = document.createElement("div");
+    const pClass = (action.priority || "").toLowerCase();
+    item.className = `trace-item ${pClass}`;
+    const timeStr = new Date().toLocaleTimeString();
+    const actionDesc = action.type === "stay_silent" ? `silent (${action.reason || "nominal"})` : `${action.type}: "${action.text || ""}"`;
+    item.textContent = `[${timeStr}] [${action.priority || "P3"}] [${action.mode || "walk"}] ${actionDesc}`;
+    this.traceListEl.prepend(item);
+    // Keep max 30 items in live timeline
+    while (this.traceListEl.children.length > 30) {
+      this.traceListEl.removeChild(this.traceListEl.lastChild);
+    }
+  }
+
+  async fetchTraces() {
+    try {
+      const res = await fetch(`/traces/${this.session.sessionId}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!this.traceListEl) return;
+      this.traceListEl.innerHTML = "";
+      if (!data.traces || data.traces.length === 0) {
+        this.traceListEl.innerHTML = '<div class="trace-placeholder">No stored traces found for this session.</div>';
+        return;
+      }
+      data.traces.forEach((t) => {
+        const item = document.createElement("div");
+        const act = t.action || {};
+        const pClass = (act.priority || "").toLowerCase();
+        item.className = `trace-item ${pClass}`;
+        const timeStr = new Date(t.timestamp || Date.now()).toLocaleTimeString();
+        item.textContent = `[${timeStr}] [${act.priority || "P3"}] ${act.type || "action"}: ${act.text || act.reason || ""}`;
+        this.traceListEl.appendChild(item);
+      });
+      this.updateStatus(`Loaded ${data.traces.length} trace records.`, "P2");
+    } catch (err) {
+      console.warn("Failed to fetch traces:", err);
+      this.updateStatus("Failed to fetch session traces from server.", "P2");
+    }
+  }
+
+  async exportTraces() {
+    try {
+      const res = await fetch(`/traces/${this.session.sessionId}`);
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `seeguide_trace_${this.session.sessionId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      this.updateStatus("Exported session trace JSON.", "P2");
+    } catch (err) {
+      console.warn("Failed to export traces:", err);
+    }
+  }
+
+  async deleteSession() {
+    if (!confirm("Are you sure you want to permanently delete all trace data for this session?")) {
+      return;
+    }
+    try {
+      const res = await fetch(`/session/${this.session.sessionId}`, { method: "DELETE" });
+      if (res.ok) {
+        if (this.traceListEl) {
+          this.traceListEl.innerHTML = '<div class="trace-placeholder">Session data deleted.</div>';
+        }
+        this.updateStatus("Session data permanently deleted from server.", "P2");
+        this.audio.speak("Session data deleted.", "P2");
+      }
+    } catch (err) {
+      console.warn("Failed to delete session:", err);
+    }
   }
 
   handleConnectionStatus(status) {

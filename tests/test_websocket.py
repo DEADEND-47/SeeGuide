@@ -112,3 +112,20 @@ def test_websocket_invalid_payload_error_handling():
         action = AgentAction.from_json_str(response_text)
         assert action.type == "log_event"
         assert action.reason == "validation_error"
+
+
+def test_traces_and_delete_session_http_endpoints():
+    """Verify HTTP GET /traces/{session_id} and DELETE /session/{session_id}."""
+    session_id = "http-test-sess"
+
+    # Query initial empty traces
+    res = client.get(f"/traces/{session_id}")
+    assert res.status_code == 200
+    assert res.json()["session_id"] == session_id
+    assert res.json()["count"] == 0
+
+    # Delete session endpoint
+    del_res = client.delete(f"/session/{session_id}")
+    assert del_res.status_code == 200
+    assert del_res.json()["status"] == "deleted"
+    assert del_res.json()["session_id"] == session_id

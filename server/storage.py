@@ -13,7 +13,7 @@ import os
 from pathlib import Path
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 import boto3
 from botocore.exceptions import ClientError
 
@@ -44,6 +44,16 @@ class TraceRepository(ABC):
     @abstractmethod
     async def save_trace(self, session_id: str, trace_data: Dict[str, Any]) -> None:
         """Persists a structured trace telemetry record."""
+        pass
+
+    @abstractmethod
+    async def delete_session(self, session_id: str) -> None:
+        """Deletes all telemetry traces associated with a session ID (FR-12, Privacy)."""
+        pass
+
+    @abstractmethod
+    async def get_session_traces(self, session_id: str) -> List[Dict[str, Any]]:
+        """Retrieves telemetry traces for a session (FR-13, Trace Viewer)."""
         pass
 
 
@@ -96,6 +106,41 @@ class AWSDynamoDBTraceRepository(TraceRepository):
             )
         except Exception as e:
             logger.error("Failed to write trace to DynamoDB table %s: %s", self.table_name, e)
+
+    async def delete_session(self, session_id: str) -> None:
+        """Deletes all items matching session_id from DynamoDB."""
+        loop = asyncio.get_running_loop()
+        def _delete():
+            from boto3.dynamodb.conditions import Key
+            response = self.table.query(
+                KeyConditionExpression=Key("session_id").eq(session_id)
+            )
+            with self.table.batch_writer() as batch:
+                for item in response.get("Items", []):
+                    batch.delete_item(Key={
+                        "session_id": item["session_id"],
+                        "timestamp": item["timestamp"],
+                    })
+        try:
+            await loop.run_in_executor(_executor, _delete)
+        except Exception as e:
+            logger.error("Failed to delete session %s from DynamoDB: %s", session_id, e)
+
+    async def get_session_traces(self, session_id: str) -> List[Dict[str, Any]]:
+        """Queries telemetry traces for a given session from DynamoDB."""
+        loop = asyncio.get_running_loop()
+        def _query():
+            from boto3.dynamodb.conditions import Key
+            response = self.table.query(
+                KeyConditionExpression=Key("session_id").eq(session_id),
+                ScanIndexForward=True,
+            )
+            return response.get("Items", [])
+        try:
+            return await loop.run_in_executor(_executor, _query)
+        except Exception as e:
+            logger.error("Failed to query traces for session %s: %s", session_id, e)
+            return []
 
 
 class AWSS3ObjectStorage(ObjectStorage):
@@ -150,6 +195,31 @@ class LocalMockTraceRepository(TraceRepository):
             _executor,
             lambda: file_path.write_text(payload, encoding="utf-8")
         )
+
+    async def delete_session(self, session_id: str) -> None:
+        """Deletes all local mock trace files for the session."""
+        loop = asyncio.get_running_loop()
+        def _delete():
+            for f in self.base_dir.glob(f"{session_id}_*.json"):
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+        await loop.run_in_executor(_executor, _delete)
+
+    async def get_session_traces(self, session_id: str) -> List[Dict[str, Any]]:
+        """Reads all local mock trace JSON files for the session ordered by filename."""
+        loop = asyncio.get_running_loop()
+        def _read():
+            traces = []
+            files = sorted(self.base_dir.glob(f"{session_id}_*.json"))
+            for f in files:
+                try:
+                    traces.append(json.loads(f.read_text(encoding="utf-8")))
+                except Exception:
+                    pass
+            return traces
+        return await loop.run_in_executor(_executor, _read)
 
 
 class LocalMockObjectStorage(ObjectStorage):

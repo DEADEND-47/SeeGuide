@@ -340,6 +340,89 @@ input:checked + .slider:before {
   cursor: pointer;
 }
 
+/* Trace Viewer Section (FR-13) */
+.trace-viewer-section {
+  background: var(--surface-color);
+  border: 2px solid #333333;
+  border-radius: var(--border-radius);
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.trace-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.trace-label {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent-yellow);
+}
+
+.trace-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-trace {
+  min-height: 38px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: 6px;
+  border: 1px solid #555555;
+  background: #2a2a2a;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.btn-trace.btn-danger {
+  background: #4a1515;
+  border-color: #ff4d4d;
+  color: #ffcccc;
+}
+
+.trace-list {
+  max-height: 180px;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #111111;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.trace-item {
+  padding: 6px 8px;
+  border-left: 3px solid #666;
+  background: #1a1a1a;
+  border-radius: 4px;
+}
+
+.trace-item.p0 {
+  border-left-color: #ff3333;
+  background: #331111;
+}
+
+.trace-item.p1 {
+  border-left-color: #ffaa00;
+}
+
+.trace-placeholder {
+  color: #888888;
+  font-style: italic;
+  padding: 8px;
+  text-align: center;
+}
+
 /* Keyboard and Screen-Reader Accessible Focus Styles */
 button:focus-visible,
 input:focus-visible,

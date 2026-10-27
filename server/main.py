@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, Response, WebSocket
 from fastapi.staticfiles import StaticFiles
 from server.config import get_settings
+from server.storage import get_trace_repo
 from server.websocket_handler import handle_websocket
 
 settings = get_settings()
@@ -66,6 +67,23 @@ async def health_check():
         "models_loaded": all_models_loaded,
         "models_detail": models_status,
     }
+
+
+@app.get("/traces/{session_id}")
+async def get_traces_endpoint(session_id: str):
+    """FR-13 & Section 6: Query session trace timeline for the Web Trace Viewer."""
+    repo = get_trace_repo()
+    traces = await repo.get_session_traces(session_id)
+    return {"session_id": session_id, "count": len(traces), "traces": traces}
+
+
+@app.delete("/session/{session_id}")
+async def delete_session_endpoint(session_id: str):
+    """NFR-6 & Section 12: 'Delete my session' endpoint for BLV privacy compliance."""
+    repo = get_trace_repo()
+    await repo.delete_session(session_id)
+    logger.info("Session data permanently deleted for session_id: %s", session_id)
+    return {"status": "deleted", "session_id": session_id}
 
 
 @app.websocket("/ws/{session_id}")
