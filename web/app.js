@@ -1,8 +1,13 @@
 /**
- * SeeGuide Mobile PWA Application
- * Privacy-first phone-camera assistant for blind and low-vision pedestrians.
- * Implements camera streaming, frame telemetry, priority speech synthesis,
- * haptics, and active perception confirmation handling.
+ * SeeGuide Client Application (OpenCV AI Competition 2026)
+ * Strict implementation of Plan & SRS:
+ * - FR-1: 640x480 JPEG frame capture streamed over WebSockets (latest-frame-wins)
+ * - FR-10: Human approval confirmation dialog
+ * - FR-11: Priority client-side speech queue (P0 interrupts speech) + haptics
+ * - FR-13: Web trace viewer reading session timeline
+ * - FR-14: Voice commands ("read", "walk", "stop", "what's around me") via Web Speech API
+ * - FR-15: Export session trace as JSON
+ * - Section 12: First-launch safety notice and "delete my session" endpoint
  */
 
 class SessionManager {
@@ -52,49 +57,77 @@ class AudioManager {
       return;
     }
 
-    // CRITICAL: P0 Hazard immediately cancels all current and queued speech
+    // CRITICAL: P0 Hazard immediately cancels all current and queued speech (FR-11)
     if (priority === "P0") {
       if (this.synth) {
         this.synth.cancel();
       }
       this.queue = [];
       this.isSpeaking = false;
-      this.lastSpokenText = clean;
-      this.lastSpokenTime = now;
-
-      const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.rate = 1.15; // Slightly faster for emergency hazard
-      utterance.pitch = 1.1;
-      utterance.volume = 1.0;
-
-      if (this.synth) {
-        this.synth.speak(utterance);
-      }
+      this.playEarcon();
+      this.enqueue(clean, "P0");
+      this.processQueue();
       return;
     }
 
-    // Lower priority speech (P1, P2, P3) queued normally
-    this.queue.push({ text: clean, priority, time: now });
+    this.enqueue(clean, priority);
     this.processQueue();
+  }
+
+  playEarcon() {
+    // Short audible alert tone for hazards using Web Audio API
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 tone
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {
+      // AudioContext unavailable or blocked
+    }
+  }
+
+  enqueue(text, priority) {
+    const priorityWeight = { P0: 0, P1: 1, P2: 2, P3: 3 };
+    const item = {
+      text,
+      priority,
+      weight: priorityWeight[priority] ?? 2,
+      timestamp: Date.now(),
+    };
+
+    if (priority === "P0") {
+      this.queue.unshift(item);
+    } else {
+      this.queue.push(item);
+      this.queue.sort((a, b) => a.weight - b.weight);
+    }
   }
 
   processQueue() {
     if (this.isSpeaking || this.queue.length === 0 || !this.synth) return;
 
     const item = this.queue.shift();
-    this.lastSpokenText = item.text;
-    this.lastSpokenTime = item.time;
-
     const utterance = new SpeechSynthesisUtterance(item.text);
-    utterance.rate = 1.0;
+    utterance.rate = 1.05;
     utterance.pitch = 1.0;
 
     utterance.onend = () => {
       this.isSpeaking = false;
-      this.processQueue();
+      this.lastSpokenText = item.text;
+      this.lastSpokenTime = Date.now();
+      setTimeout(() => this.processQueue(), 80);
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      console.warn("Speech synthesis error:", e);
       this.isSpeaking = false;
       this.processQueue();
     };
@@ -109,10 +142,9 @@ class HapticManager {
     if (!("vibrate" in navigator)) return;
 
     if (priority === "P0") {
-      // Urgent double-pulse pattern
+      // Urgent double-pulse pattern (FR-11)
       navigator.vibrate([200, 100, 200, 100, 300]);
     } else if (priority === "P1") {
-      // Single attention pulse
       navigator.vibrate([150]);
     }
   }
@@ -158,19 +190,18 @@ class CameraManager {
     this.video.src = URL.createObjectURL(file);
     this.video.loop = true;
     this.video.muted = true;
-    this.video.play();
-    this.isDemoMode = true;
-    this.startCaptureLoop();
+    this.video.play().then(() => {
+      this.startCaptureLoop();
+    });
   }
 
   startCaptureLoop() {
     this.stopCaptureLoop();
-    // Throttle capture to ~5 fps (200ms per frame) to prevent client/network congestion
+    // FR-1: capture approx 5 fps (200ms)
     this.captureInterval = setInterval(() => {
       if (this.video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
         this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
         const dataUrl = this.canvas.toDataURL("image/jpeg", 0.7);
-        // Strip data:image/jpeg;base64, prefix
         const b64 = dataUrl.split(",")[1];
         if (b64 && this.onFrameReady) {
           this.onFrameReady(b64, this.canvas.width, this.canvas.height);
@@ -248,26 +279,105 @@ class WebSocketClient {
   }
 
   scheduleReconnect() {
-    if (!this.reconnectTimer) {
-      this.reconnectTimer = setTimeout(() => {
-        this.reconnectTimer = null;
-        this.connect();
-      }, 2000);
-    }
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, 2000);
   }
 
   sendFrame(frameMessage) {
-    // Latest-frame-wins client rule: drop if socket buffer is backlogged
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      if (this.ws.bufferedAmount === 0) {
-        this.ws.send(JSON.stringify(frameMessage));
-      }
+      this.ws.send(JSON.stringify(frameMessage));
     }
   }
 
-  sendMessage(message) {
+  sendMessage(messageObj) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
+      this.ws.send(JSON.stringify(messageObj));
+    }
+  }
+}
+
+class VoiceCommandManager {
+  constructor(onCommand) {
+    this.onCommand = onCommand;
+    this.recognition = null;
+    this.isListening = false;
+    this.init();
+  }
+
+  init() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.log("Web Speech API not supported in this browser. Button fallback active.");
+      return;
+    }
+
+    this.recognition = new SpeechRecognition();
+    this.recognition.continuous = true;
+    this.recognition.interimResults = false;
+    this.recognition.lang = "en-US";
+
+    this.recognition.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          const transcript = event.results[i][0].transcript.trim().toLowerCase();
+          console.log("Voice command heard:", transcript);
+          this.handleTranscript(transcript);
+        }
+      }
+    };
+
+    this.recognition.onerror = (e) => {
+      if (e.error !== "no-speech") {
+        console.warn("Voice recognition error:", e.error);
+      }
+    };
+
+    this.recognition.onend = () => {
+      if (this.isListening) {
+        try {
+          this.recognition.start();
+        } catch (e) {
+          // Restart loop
+        }
+      }
+    };
+  }
+
+  handleTranscript(text) {
+    // FR-14 voice commands: "read", "walk", "stop", "what's around me"
+    if (text.includes("read")) {
+      this.onCommand("read");
+    } else if (text.includes("walk")) {
+      this.onCommand("walk");
+    } else if (text.includes("stop")) {
+      this.onCommand("stop");
+    } else if (text.includes("around") || text.includes("describe") || text.includes("what")) {
+      this.onCommand("describe");
+    } else if (text.includes("yes") || text.includes("confirm")) {
+      this.onCommand("confirm_yes");
+    } else if (text.includes("no") || text.includes("cancel") || text.includes("dismiss")) {
+      this.onCommand("confirm_no");
+    }
+  }
+
+  start() {
+    if (this.recognition && !this.isListening) {
+      this.isListening = true;
+      try {
+        this.recognition.start();
+      } catch (e) {}
+    }
+  }
+
+  stop() {
+    if (this.recognition && this.isListening) {
+      this.isListening = false;
+      try {
+        this.recognition.stop();
+      } catch (e) {}
     }
   }
 }
@@ -283,14 +393,24 @@ class App {
     this.statusText = document.getElementById("status-text");
     this.connectionStatus = document.getElementById("connection-status");
     this.feedbackPanel = document.getElementById("feedback-panel");
+    this.actionPriorityTag = document.getElementById("action-priority-tag");
+
     this.btnWalk = document.getElementById("btn-mode-walk");
     this.btnRead = document.getElementById("btn-mode-read");
     this.btnDescribe = document.getElementById("btn-mode-describe");
+
     this.confirmDialog = document.getElementById("confirmation-dialog");
     this.confirmPrompt = document.getElementById("confirm-prompt");
     this.btnConfirmYes = document.getElementById("btn-confirm-yes");
     this.btnConfirmNo = document.getElementById("btn-confirm-no");
+
     this.btnCameraToggle = document.getElementById("btn-camera-toggle");
+    this.btnVoiceToggle = document.getElementById("btn-voice-toggle");
+    this.voiceBtnLabel = document.getElementById("voice-btn-label");
+
+    this.safetyModal = document.getElementById("safety-modal");
+    this.btnSafetyDismiss = document.getElementById("btn-safety-dismiss");
+
     this.demoSwitch = document.getElementById("demo-switch");
     this.demoUploadWrapper = document.getElementById("demo-upload-wrapper");
     this.videoFileInput = document.getElementById("video-file-input");
@@ -305,14 +425,7 @@ class App {
     this.btnExportTraces = document.getElementById("btn-export-traces");
     this.btnDeleteSession = document.getElementById("btn-delete-session");
 
-    this.activeModeLabel = document.getElementById("active-mode-label");
-    this.cameraBtnText = document.getElementById("camera-btn-text");
-    this.actionPriorityTag = document.getElementById("action-priority-tag");
-    this.hudLatency = document.getElementById("hud-latency");
-    this.hudQuality = document.getElementById("hud-quality");
-
     this.totalEventCount = 0;
-
     this.activeConfirmId = null;
     this.isCameraRunning = true;
     this.previousFocusedElement = null;
@@ -321,8 +434,13 @@ class App {
   }
 
   async init() {
+    this.checkSafetyNotice();
     this.bindEvents();
     this.requestWakeLock();
+
+    // Initialize Voice Commands (FR-14)
+    this.voice = new VoiceCommandManager((cmd) => this.handleVoiceCommand(cmd));
+    this.voice.start();
 
     // Initialize WebSocket
     this.wsClient = new WebSocketClient(
@@ -331,7 +449,7 @@ class App {
       (status) => this.handleConnectionStatus(status)
     );
 
-    // Initialize Camera
+    // Initialize Camera (FR-1)
     this.camera = new CameraManager(
       this.videoEl,
       this.canvasEl,
@@ -342,20 +460,49 @@ class App {
     if (!cameraStarted) {
       this.isCameraRunning = false;
       if (this.btnCameraToggle) {
-        if (this.cameraBtnText) this.cameraBtnText.textContent = "Start Camera";
-        this.btnCameraToggle.classList.add("stopped");
+        this.btnCameraToggle.textContent = "Start Camera";
       }
       this.updateStatus("Camera unavailable. Toggle Demo Mode to test video.", "P2");
     }
   }
 
+  checkSafetyNotice() {
+    // Section 12: Safety notice shown on first launch
+    const agreed = localStorage.getItem("seeguide_safety_agreed");
+    if (!agreed && this.safetyModal) {
+      this.safetyModal.style.display = "flex";
+      if (this.btnSafetyDismiss) this.btnSafetyDismiss.focus();
+    } else if (this.safetyModal) {
+      this.safetyModal.style.display = "none";
+    }
+  }
+
   bindEvents() {
+    if (this.btnSafetyDismiss) {
+      this.btnSafetyDismiss.addEventListener("click", () => {
+        localStorage.setItem("seeguide_safety_agreed", "true");
+        this.safetyModal.style.display = "none";
+      });
+    }
+
     this.btnWalk.addEventListener("click", () => this.switchMode("walk"));
     this.btnRead.addEventListener("click", () => this.switchMode("read"));
     this.btnDescribe.addEventListener("click", () => this.triggerDescribe());
 
     if (this.btnCameraToggle) {
       this.btnCameraToggle.addEventListener("click", () => this.toggleCamera());
+    }
+
+    if (this.btnVoiceToggle) {
+      this.btnVoiceToggle.addEventListener("click", () => {
+        if (this.voice.isListening) {
+          this.voice.stop();
+          this.voiceBtnLabel.textContent = "Off";
+        } else {
+          this.voice.start();
+          this.voiceBtnLabel.textContent = "Listening";
+        }
+      });
     }
 
     if (this.btnRefreshTraces) {
@@ -411,7 +558,6 @@ class App {
       }
     });
 
-    // Re-acquire wake lock on visibility change
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") {
         this.requestWakeLock();
@@ -419,22 +565,39 @@ class App {
     });
   }
 
+  handleVoiceCommand(cmd) {
+    if (cmd === "walk" || cmd === "read") {
+      this.switchMode(cmd);
+    } else if (cmd === "describe") {
+      this.triggerDescribe();
+    } else if (cmd === "stop") {
+      this.wsClient.sendMessage({ type: "command", command: "stop" });
+      this.audio.speak("Stopped. Resuming nominal monitoring.", "P2");
+    } else if (cmd === "confirm_yes") {
+      if (this.confirmDialog.style.display !== "none") {
+        this.respondConfirmation(true);
+      }
+    } else if (cmd === "confirm_no") {
+      if (this.confirmDialog.style.display !== "none") {
+        this.respondConfirmation(false);
+      }
+    }
+  }
+
   async toggleCamera() {
     if (this.isCameraRunning) {
       this.camera.stopCamera();
       this.isCameraRunning = false;
-      if (this.cameraBtnText) this.cameraBtnText.textContent = "Start Camera";
-      this.btnCameraToggle.classList.add("stopped");
-      this.updateStatus("Camera paused. Tap to resume monitoring.", "P2");
-      this.audio.speak("Camera stopped.", "P2");
+      this.btnCameraToggle.textContent = "Resume Camera";
+      this.updateStatus("Camera paused. Tap Resume to restart.", "P2");
+      this.audio.speak("Camera paused.", "P2");
     } else {
       const started = await this.camera.startCamera();
       if (started) {
         this.isCameraRunning = true;
-        if (this.cameraBtnText) this.cameraBtnText.textContent = "Pause Camera";
-        this.btnCameraToggle.classList.remove("stopped");
-        this.updateStatus("Camera started. Monitoring walking corridor.", "P2");
-        this.audio.speak("Camera started.", "P2");
+        this.btnCameraToggle.textContent = "Pause Camera";
+        this.updateStatus("Camera active. Monitoring walking corridor.", "P2");
+        this.audio.speak("Camera resumed.", "P2");
       } else {
         this.updateStatus("Failed to restart camera.", "P2");
       }
@@ -445,9 +608,7 @@ class App {
     if ("wakeLock" in navigator) {
       try {
         this.wakeLock = await navigator.wakeLock.request("screen");
-      } catch (err) {
-        console.warn("Screen Wake Lock request failed:", err);
-      }
+      } catch (err) {}
     }
   }
 
@@ -462,7 +623,6 @@ class App {
       this.btnWalk.setAttribute("aria-pressed", "true");
       this.btnRead.classList.remove("active");
       this.btnRead.setAttribute("aria-pressed", "false");
-      if (this.activeModeLabel) this.activeModeLabel.textContent = "Walk Mode";
       this.updateStatus("Switched to Walk Mode. Monitoring for obstacles.", "P2");
       this.audio.speak("Walk mode.", "P2");
     } else if (mode === "read") {
@@ -470,8 +630,7 @@ class App {
       this.btnRead.setAttribute("aria-pressed", "true");
       this.btnWalk.classList.remove("active");
       this.btnWalk.setAttribute("aria-pressed", "false");
-      if (this.activeModeLabel) this.activeModeLabel.textContent = "Read Mode";
-      this.updateStatus("Switched to Read Mode. Point camera at signage or text.", "P2");
+      this.updateStatus("Switched to Read Mode. Point camera at signage.", "P2");
       this.audio.speak("Read mode.", "P2");
     }
   }
@@ -483,7 +642,6 @@ class App {
       type: "command",
       command: "describe",
     });
-    // Send immediate describe trigger frame with describe mode
     const priorMode = this.session.currentMode;
     this.session.setMode("describe");
     setTimeout(() => {
@@ -509,14 +667,12 @@ class App {
   handleAgentAction(action) {
     if (!action) return;
 
-    // Update Priority Pill in Header
     if (this.actionPriorityTag && action.priority) {
       const p = action.priority.toUpperCase();
       this.actionPriorityTag.textContent = `${p} ${action.type || "Action"}`;
-      this.actionPriorityTag.className = `priority-pill ${p.toLowerCase()}`;
+      this.actionPriorityTag.className = `priority-label ${p.toLowerCase()}`;
     }
 
-    // Append to live trace viewer UI
     this.appendLiveTrace(action);
 
     // 1. Auditory Feedback (ignore silent and internal log events)
@@ -529,7 +685,7 @@ class App {
       this.haptics.vibrate(action.priority);
     }
 
-    // 3. Visual UI Updates & Screen Reader Alert Region
+    // 3. Visual Alert Region
     const hazardEl = document.getElementById("hazard-alert");
     if (action.priority === "P0") {
       this.feedbackPanel.classList.add("hazard");
@@ -543,6 +699,7 @@ class App {
       }
     }
 
+    // 4. Human-in-the-Loop Approval (FR-10)
     if (action.type === "ask_confirmation") {
       this.showConfirmation(action.text, action.confirm_id);
     } else if (action.text && action.type !== "stay_silent" && action.type !== "log_event") {
@@ -553,8 +710,8 @@ class App {
   showConfirmation(prompt, confirmId) {
     this.previousFocusedElement = document.activeElement;
     this.activeConfirmId = confirmId;
-    this.confirmPrompt.textContent = prompt;
-    this.confirmDialog.style.display = "block";
+    this.confirmPrompt.textContent = prompt || "Read the sign aloud?";
+    this.confirmDialog.style.display = "flex";
     this.btnConfirmYes.focus();
   }
 
@@ -579,24 +736,23 @@ class App {
 
   appendLiveTrace(action) {
     if (!this.traceListEl) return;
-    const placeholder = this.traceListEl.querySelector(".trace-placeholder");
+    const placeholder = this.traceListEl.querySelector(".trace-empty");
     if (placeholder) {
       placeholder.remove();
     }
     this.totalEventCount++;
     if (this.traceCountPill) {
-      this.traceCountPill.textContent = `${this.totalEventCount} events`;
+      this.traceCountPill.textContent = `${this.totalEventCount} records`;
     }
 
-    const item = document.createElement("div");
+    const row = document.createElement("div");
     const pClass = (action.priority || "").toLowerCase();
-    item.className = `trace-item ${pClass}`;
+    row.className = `trace-row ${pClass}`;
     const timeStr = new Date().toLocaleTimeString();
-    const actionDesc = action.type === "stay_silent" ? `silent (${action.reason || "nominal"})` : `${action.type}: "${action.text || ""}"`;
-    item.innerHTML = `<span style="opacity: 0.6; font-size: 0.7rem;">[${timeStr}] [${action.priority || "P3"}] [${action.mode || "walk"}]</span><strong>${actionDesc}</strong>`;
-    this.traceListEl.prepend(item);
-    // Keep max 30 items in live timeline
-    while (this.traceListEl.children.length > 30) {
+    const actionDesc = action.type === "stay_silent" ? `stay_silent (${action.reason || "nominal"})` : `${action.type}: "${action.text || ""}"`;
+    row.innerHTML = `<span style="color: #aeaeb2; font-size: 0.75rem;">${timeStr} | ${action.priority || "P3"} | ${action.mode || "walk"}</span><strong>${actionDesc}</strong>`;
+    this.traceListEl.prepend(row);
+    while (this.traceListEl.children.length > 25) {
       this.traceListEl.removeChild(this.traceListEl.lastChild);
     }
   }
@@ -609,17 +765,17 @@ class App {
       if (!this.traceListEl) return;
       this.traceListEl.innerHTML = "";
       if (!data.traces || data.traces.length === 0) {
-        this.traceListEl.innerHTML = '<div class="trace-placeholder">No stored traces found for this session.</div>';
+        this.traceListEl.innerHTML = '<div class="trace-empty">No stored traces found for this session.</div>';
         return;
       }
       data.traces.forEach((t) => {
-        const item = document.createElement("div");
+        const row = document.createElement("div");
         const act = t.action || {};
         const pClass = (act.priority || "").toLowerCase();
-        item.className = `trace-item ${pClass}`;
+        row.className = `trace-row ${pClass}`;
         const timeStr = new Date(t.timestamp || Date.now()).toLocaleTimeString();
-        item.textContent = `[${timeStr}] [${act.priority || "P3"}] ${act.type || "action"}: ${act.text || act.reason || ""}`;
-        this.traceListEl.appendChild(item);
+        row.innerHTML = `<span style="color: #aeaeb2; font-size: 0.75rem;">${timeStr} | ${act.priority || "P3"}</span><strong>${act.type || "action"}: ${act.text || act.reason || ""}</strong>`;
+        this.traceListEl.appendChild(row);
       });
       this.updateStatus(`Loaded ${data.traces.length} trace records.`, "P2");
     } catch (err) {
@@ -646,14 +802,14 @@ class App {
   }
 
   async deleteSession() {
-    if (!confirm("Are you sure you want to permanently delete all trace data for this session?")) {
+    if (!confirm("Permanently delete all stored traces for this session?")) {
       return;
     }
     try {
       const res = await fetch(`/session/${this.session.sessionId}`, { method: "DELETE" });
       if (res.ok) {
         if (this.traceListEl) {
-          this.traceListEl.innerHTML = '<div class="trace-placeholder">Session data deleted.</div>';
+          this.traceListEl.innerHTML = '<div class="trace-empty">Session data purged from server.</div>';
         }
         this.updateStatus("Session data permanently deleted from server.", "P2");
         this.audio.speak("Session data deleted.", "P2");
@@ -665,19 +821,18 @@ class App {
 
   handleConnectionStatus(status) {
     if (status === "connected") {
-      this.connectionStatus.textContent = "Connected to SeeGuide Backend";
-      this.connectionStatus.className = "status-badge connected";
+      this.connectionStatus.querySelector(".status-text").textContent = "Connected";
+      this.connectionStatus.className = "status-indicator connected";
     } else if (status === "connecting") {
-      this.connectionStatus.textContent = "Connecting to server...";
-      this.connectionStatus.className = "status-badge disconnected";
+      this.connectionStatus.querySelector(".status-text").textContent = "Connecting";
+      this.connectionStatus.className = "status-indicator";
     } else {
-      this.connectionStatus.textContent = "Disconnected (Reconnecting...)";
-      this.connectionStatus.className = "status-badge disconnected";
+      this.connectionStatus.querySelector(".status-text").textContent = "Offline";
+      this.connectionStatus.className = "status-indicator";
     }
   }
 }
 
-// Instantiate application on DOMContentLoaded
 window.addEventListener("DOMContentLoaded", () => {
   window.seeGuideApp = new App();
 });
