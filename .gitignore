@@ -1,10 +1,18 @@
-# Environment & Secrets
+# ==============================================================================
+# SeeGuide .gitignore
+# Privacy-first, least-privilege, and clean repository tracking rules
+# ==============================================================================
+
+# Environment & Secrets (Never commit credentials or active env files)
 .env
 *.env
+!.env.example
 secrets/
 credentials/
+*.pem
+*.key
 
-# Python
+# Python Bytecode & Package Artifacts
 __pycache__/
 *.py[cod]
 *$py.class
@@ -26,9 +34,13 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Testing & Test Coverage
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.nox/
 
 # Virtual Environments
 .venv/
@@ -36,28 +48,36 @@ venv/
 ENV/
 env/
 
-# Node / Frontend
+# Node / Frontend Artifacts
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Logs
+# Server & Runtime Logs
 *.log
 logs/
 
-# Large Model weights & evaluation media
+# Large Model Weights (Downloaded via `make models` / `scripts/download_models.py`)
 models/
-eval/clips/raw/
+!models/.gitkeep
 
-# Local mock persistence data
+# Evaluation Media (Raw video recordings with potential PII are excluded)
+eval/clips/raw/
+eval/clips/*.mp4
+!eval/clips/.gitkeep
+
+# Local Mock Persistence Data (Traces & Uploaded Objects)
 data/traces/*.json
 !data/traces/.gitkeep
 data/objects/*
 !data/objects/.gitkeep
 
-# OS / Editor Artifacts
+# Operating System & IDE Metadata
 .DS_Store
 Thumbs.db
+desktop.ini
 .vscode/
 .idea/
+*.sublime-project
+*.sublime-workspace

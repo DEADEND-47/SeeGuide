@@ -1,21 +1,26 @@
-# SeeGuide Stage 4 Pinned Dependencies
-# Core Vision Pipeline (OpenCV 5 Headless & NumPy)
+# SeeGuide Pinned Dependencies (OpenCV AI Competition 2026)
+# Python 3.13 / 3.12 / 3.11 Compatible
+
+# Core Computer Vision Pipeline (OpenCV 5 Headless & NumPy)
 opencv-python-headless==5.0.0.93
 numpy==2.4.3
 
-# Web Server & Real-time WebSockets
+# Web Server, ASGI Runtime & Real-time WebSockets
 fastapi==0.136.1
 uvicorn[standard]==0.46.0
 websockets==16.1.1
 
-# Data Contracts, Schema Validation & Environment
+# Data Contracts, Schema Validation & Settings Management
 pydantic==2.13.3
 pydantic-settings==2.14.2
 python-dotenv==1.2.2
+fastjsonschema==2.22.2
 
-# AWS Storage & Telemetry (DynamoDB & S3)
+# AWS Free-Tier Cloud Storage & Telemetry (DynamoDB & S3)
 boto3==1.43.114
+botocore==1.43.114
 
-# Testing Framework
+# Testing Framework & Async Test Runner
 pytest==9.1.1
 pytest-asyncio==1.4.0
+httpx==0.28.1
